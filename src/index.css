@@ -41,31 +41,13 @@ html, body {
   -webkit-app-region: drag;
 }
 
-/* Audio-reactive glow petals */
-.petal {
+/* Audio-reactive frequency visualizer */
+#visualizer {
   position: absolute;
-  inset: -20px;
-  border-radius: 50%;
-  filter: blur(10px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none;
-  opacity: 0;
-  -webkit-mask-image: radial-gradient(closest-side, transparent 65%, black 75%, black 95%, transparent 100%);
-  mask-image: radial-gradient(closest-side, transparent 65%, black 75%, black 95%, transparent 100%);
-}
-
-.petal-1 {
-  background: conic-gradient(from var(--petal-rot-1), transparent, var(--petal-color-1, #48dbfb) 8%, var(--petal-color-1, #48dbfb) 16%, transparent 25%, transparent);
-  animation: petal-spin-1 4s linear infinite;
-}
-
-.petal-2 {
-  background: conic-gradient(from var(--petal-rot-2), transparent, var(--petal-color-2, #ff9ff3) 6%, var(--petal-color-2, #ff9ff3) 14%, transparent 22%, transparent);
-  animation: petal-spin-2 5.5s linear infinite;
-}
-
-.petal-3 {
-  background: conic-gradient(from var(--petal-rot-3), transparent, var(--petal-color-3, #54a0ff) 10%, var(--petal-color-3, #54a0ff) 18%, transparent 28%, transparent);
-  animation: petal-spin-3 3.5s linear infinite;
 }
 
 .circle {
@@ -149,40 +131,7 @@ html, body {
   inherits: false;
 }
 
-@property --petal-rot-1 {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@property --petal-rot-2 {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@property --petal-rot-3 {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
 @keyframes spin {
   from { --angle: 0deg; }
   to { --angle: 360deg; }
-}
-
-@keyframes petal-spin-1 {
-  from { --petal-rot-1: 0deg; }
-  to { --petal-rot-1: 360deg; }
-}
-
-@keyframes petal-spin-2 {
-  from { --petal-rot-2: 0deg; }
-  to { --petal-rot-2: -360deg; }
-}
-
-@keyframes petal-spin-3 {
-  from { --petal-rot-3: 0deg; }
-  to { --petal-rot-3: 360deg; }
 }
