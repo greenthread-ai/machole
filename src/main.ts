@@ -16,6 +16,7 @@ interface Settings {
   pulseEnabled: boolean;
   currentTheme: string;
   currentSize: number;
+  currentCamera: string;
 }
 
 const defaults: Settings = {
@@ -25,6 +26,7 @@ const defaults: Settings = {
   pulseEnabled: true,
   currentTheme: 'Rainbow',
   currentSize: 200,
+  currentCamera: '',
 };
 
 function getSettingsPath(): string {
@@ -48,6 +50,7 @@ function saveSettings() {
     pulseEnabled,
     currentTheme,
     currentSize,
+    currentCamera,
   };
   fs.writeFileSync(getSettingsPath(), JSON.stringify(data, null, 2));
 }
@@ -59,6 +62,8 @@ let closeupEnabled = settings.closeupEnabled;
 let pulseEnabled = settings.pulseEnabled;
 let currentTheme = settings.currentTheme;
 let currentSize = settings.currentSize;
+let currentCamera = settings.currentCamera;
+let cameraDevices: { id: string; label: string }[] = [];
 
 const themes: Record<string, string[]> = {
   Rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6b6b'],
@@ -166,16 +171,39 @@ const createWindow = () => {
           },
         })),
       },
+      ...(cameraDevices.length > 1
+        ? [
+            {
+              label: 'Camera',
+              submenu: cameraDevices.map(({ id, label }) => ({
+                label,
+                type: 'radio' as const,
+                checked: currentCamera ? currentCamera === id : cameraDevices[0]?.id === id,
+                click: () => {
+                  currentCamera = id;
+                  mainWindow.webContents.send('set-camera', id);
+                  saveSettings();
+                },
+              })),
+            },
+          ]
+        : []),
       { type: 'separator' },
       { label: 'Exit', click: () => app.quit() },
     ]);
     contextMenu.popup({ window: mainWindow });
   });
 
+  // Receive camera list from renderer
+  ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
+    cameraDevices = devices;
+  });
+
   // Send saved settings to renderer once the page is ready
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.send('set-theme', themes[currentTheme] || themes.Rainbow);
     mainWindow.webContents.send('set-size', currentSize);
+    mainWindow.webContents.send('set-camera', currentCamera);
     mainWindow.webContents.send('toggle-blur', blurEnabled);
     mainWindow.webContents.send('toggle-autoframe', autoframeEnabled);
     mainWindow.webContents.send('toggle-closeup', closeupEnabled);

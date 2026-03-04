@@ -10,12 +10,14 @@ declare global {
   interface Window {
     machole: {
       quitApp: () => void;
+      sendCameraList: (devices: { id: string; label: string }[]) => void;
       onToggleBlur: (callback: (enabled: boolean) => void) => void;
       onToggleAutoframe: (callback: (enabled: boolean) => void) => void;
       onToggleCloseup: (callback: (enabled: boolean) => void) => void;
       onTogglePulse: (callback: (enabled: boolean) => void) => void;
       onSetTheme: (callback: (colors: string[]) => void) => void;
       onSetSize: (callback: (size: number) => void) => void;
+      onSetCamera: (callback: (deviceId: string) => void) => void;
     };
   }
 }
@@ -152,10 +154,61 @@ function getVolume(): number {
   return Math.sqrt(sum / analyserData.length);
 }
 
-async function init() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+let selectedCameraId = '';
+
+async function startCamera(deviceId?: string): Promise<MediaStream> {
+  // Stop existing video tracks
+  if (video.srcObject instanceof MediaStream) {
+    video.srcObject.getVideoTracks().forEach((t) => t.stop());
+  }
+
+  const videoConstraint = deviceId ? { deviceId: { exact: deviceId } } : true;
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: videoConstraint,
+    audio: true,
+  });
   video.srcObject = stream;
   await video.play();
+  return stream;
+}
+
+function updateVideoDimensions() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const canvasSize = Math.min(vw, vh);
+  canvas.width = canvasSize;
+  canvas.height = canvasSize;
+  offscreen.width = vw;
+  offscreen.height = vh;
+  currentCrop.size = Math.min(vw, vh);
+  currentCrop.x = (vw - currentCrop.size) / 2;
+  currentCrop.y = (vh - currentCrop.size) / 2;
+  cropInitialized = false;
+}
+
+async function enumerateAndSendCameras() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cameras = devices
+    .filter((d) => d.kind === 'videoinput')
+    .map((d, i) => ({ id: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+  window.machole.sendCameraList(cameras);
+}
+
+// Camera switch handler
+window.machole.onSetCamera((deviceId) => {
+  if (deviceId && deviceId !== selectedCameraId) {
+    selectedCameraId = deviceId;
+    startCamera(deviceId)
+      .then(() => updateVideoDimensions())
+      .catch((err) => console.error('Failed to switch camera:', err));
+  }
+});
+
+async function init() {
+  const stream = await startCamera(selectedCameraId || undefined);
+
+  // Enumerate cameras now that we have permission
+  await enumerateAndSendCameras();
 
   // Set up audio analyser
   const audioCtx = new AudioContext();
@@ -169,19 +222,9 @@ async function init() {
   analyserData = new Uint8Array(analyser.fftSize);
   freqData = new Uint8Array(analyser.frequencyBinCount);
 
+  updateVideoDimensions();
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-
-  const canvasSize = Math.min(vw, vh);
-  canvas.width = canvasSize;
-  canvas.height = canvasSize;
-  offscreen.width = vw;
-  offscreen.height = vh;
-
-  // Initialize crop to full frame
-  currentCrop.size = Math.min(vw, vh);
-  currentCrop.x = (vw - currentCrop.size) / 2;
-  currentCrop.y = (vh - currentCrop.size) / 2;
 
   const segmenter = await bodySegmentation.createSegmenter(
     bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
@@ -285,9 +328,10 @@ async function init() {
     } else {
       const ctx = canvas.getContext('2d');
       // Center-crop the video to a square
-      const srcX = (vw - canvasSize) / 2;
-      const srcY = (vh - canvasSize) / 2;
-      ctx.drawImage(offscreen, srcX, srcY, canvasSize, canvasSize, 0, 0, canvasSize, canvasSize);
+      const squareSize = Math.min(vw, vh);
+      const srcX = (vw - squareSize) / 2;
+      const srcY = (vh - squareSize) / 2;
+      ctx.drawImage(offscreen, srcX, srcY, squareSize, squareSize, 0, 0, squareSize, squareSize);
     }
 
     requestAnimationFrame(renderFrame);

@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('machole', {
   quitApp: () => ipcRenderer.send('quit-app'),
+  sendCameraList: (devices: { id: string; label: string }[]) =>
+    ipcRenderer.send('camera-list', devices),
   onToggleBlur: (callback: (enabled: boolean) => void) => {
     ipcRenderer.on('toggle-blur', (_event, enabled: boolean) => callback(enabled));
   },
@@ -19,5 +21,8 @@ contextBridge.exposeInMainWorld('machole', {
   },
   onSetSize: (callback: (size: number) => void) => {
     ipcRenderer.on('set-size', (_event, size: number) => callback(size));
+  },
+  onSetCamera: (callback: (deviceId: string) => void) => {
+    ipcRenderer.on('set-camera', (_event, deviceId: string) => callback(deviceId));
   },
 });
