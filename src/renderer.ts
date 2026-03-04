@@ -105,13 +105,14 @@ async function init() {
   const vw = video.videoWidth;
   const vh = video.videoHeight;
 
-  canvas.width = vw;
-  canvas.height = vh;
+  const canvasSize = Math.min(vw, vh);
+  canvas.width = canvasSize;
+  canvas.height = canvasSize;
   offscreen.width = vw;
   offscreen.height = vh;
 
   // Initialize crop to full frame
-  currentCrop.size = Math.max(vw, vh);
+  currentCrop.size = Math.min(vw, vh);
   currentCrop.x = (vw - currentCrop.size) / 2;
   currentCrop.y = (vh - currentCrop.size) / 2;
 
@@ -213,7 +214,10 @@ async function init() {
       );
     } else {
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(offscreen, 0, 0);
+      // Center-crop the video to a square
+      const srcX = (vw - canvasSize) / 2;
+      const srcY = (vh - canvasSize) / 2;
+      ctx.drawImage(offscreen, srcX, srcY, canvasSize, canvasSize, 0, 0, canvasSize, canvasSize);
     }
 
     requestAnimationFrame(renderFrame);
