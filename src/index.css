@@ -1,0 +1,188 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --size: 200px;
+  --pulse: 0px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay {
+  width: calc(var(--size) + var(--pulse) * 2);
+  height: calc(var(--size) + var(--pulse) * 2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    #ff6b6b,
+    #feca57,
+    #48dbfb,
+    #ff9ff3,
+    #54a0ff,
+    #5f27cd,
+    #ff6b6b
+  );
+  animation: spin 3s linear infinite;
+  -webkit-app-region: drag;
+}
+
+/* Audio-reactive glow petals */
+.petal {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  filter: blur(10px);
+  pointer-events: none;
+  opacity: 0;
+  -webkit-mask-image: radial-gradient(closest-side, transparent 65%, black 75%, black 95%, transparent 100%);
+  mask-image: radial-gradient(closest-side, transparent 65%, black 75%, black 95%, transparent 100%);
+}
+
+.petal-1 {
+  background: conic-gradient(from var(--petal-rot-1), transparent, var(--petal-color-1, #48dbfb) 8%, var(--petal-color-1, #48dbfb) 16%, transparent 25%, transparent);
+  animation: petal-spin-1 4s linear infinite;
+}
+
+.petal-2 {
+  background: conic-gradient(from var(--petal-rot-2), transparent, var(--petal-color-2, #ff9ff3) 6%, var(--petal-color-2, #ff9ff3) 14%, transparent 22%, transparent);
+  animation: petal-spin-2 5.5s linear infinite;
+}
+
+.petal-3 {
+  background: conic-gradient(from var(--petal-rot-3), transparent, var(--petal-color-3, #54a0ff) 10%, var(--petal-color-3, #54a0ff) 18%, transparent 28%, transparent);
+  animation: petal-spin-3 3.5s linear infinite;
+}
+
+.circle {
+  width: calc(var(--size) - 12px);
+  height: calc(var(--size) - 12px);
+  border-radius: 50%;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.circle video {
+  display: none;
+}
+
+.circle canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Loader */
+.loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: opacity 0.4s;
+}
+
+.loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.blade {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 14px;
+  margin-left: -2px;
+  margin-top: -24px;
+  border-radius: 2px;
+  background: #fff;
+  transform-origin: center 24px;
+  animation: blade-fade 1s linear infinite;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.4);
+}
+
+.blade:nth-child(1)  { transform: rotate(0deg);   animation-delay: -1s; }
+.blade:nth-child(2)  { transform: rotate(30deg);  animation-delay: -0.917s; }
+.blade:nth-child(3)  { transform: rotate(60deg);  animation-delay: -0.833s; }
+.blade:nth-child(4)  { transform: rotate(90deg);  animation-delay: -0.75s; }
+.blade:nth-child(5)  { transform: rotate(120deg); animation-delay: -0.667s; }
+.blade:nth-child(6)  { transform: rotate(150deg); animation-delay: -0.583s; }
+.blade:nth-child(7)  { transform: rotate(180deg); animation-delay: -0.5s; }
+.blade:nth-child(8)  { transform: rotate(210deg); animation-delay: -0.417s; }
+.blade:nth-child(9)  { transform: rotate(240deg); animation-delay: -0.333s; }
+.blade:nth-child(10) { transform: rotate(270deg); animation-delay: -0.25s; }
+.blade:nth-child(11) { transform: rotate(300deg); animation-delay: -0.167s; }
+.blade:nth-child(12) { transform: rotate(330deg); animation-delay: -0.083s; }
+
+@keyframes blade-fade {
+  0%, 40% { opacity: 1; }
+  100% { opacity: 0.15; }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --petal-rot-1 {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --petal-rot-2 {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --petal-rot-3 {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin {
+  from { --angle: 0deg; }
+  to { --angle: 360deg; }
+}
+
+@keyframes petal-spin-1 {
+  from { --petal-rot-1: 0deg; }
+  to { --petal-rot-1: 360deg; }
+}
+
+@keyframes petal-spin-2 {
+  from { --petal-rot-2: 0deg; }
+  to { --petal-rot-2: -360deg; }
+}
+
+@keyframes petal-spin-3 {
+  from { --petal-rot-3: 0deg; }
+  to { --petal-rot-3: 360deg; }
+}
