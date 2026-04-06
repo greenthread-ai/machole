@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, screen } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
+import Module from 'node:module';
 import started from 'electron-squirrel-startup';
 
 if (started) {
@@ -17,6 +18,17 @@ interface Settings {
   currentTheme: string;
   currentSize: number;
   currentCamera: string;
+}
+
+interface NativeSpaceBridge {
+  configurePiPWindow: (nativeWindowHandle: Buffer) => boolean;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const defaults: Settings = {
@@ -55,6 +67,17 @@ function saveSettings() {
   fs.writeFileSync(getSettingsPath(), JSON.stringify(data, null, 2));
 }
 
+function getIntersectionArea(a: Rect, b: Rect): number {
+  const left = Math.max(a.x, b.x);
+  const top = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
+
+  const width = Math.max(0, right - left);
+  const height = Math.max(0, bottom - top);
+  return width * height;
+}
+
 const settings = loadSettings();
 let blurEnabled = settings.blurEnabled;
 let autoframeEnabled = settings.autoframeEnabled;
@@ -64,6 +87,44 @@ let currentTheme = settings.currentTheme;
 let currentSize = settings.currentSize;
 let currentCamera = settings.currentCamera;
 let cameraDevices: { id: string; label: string }[] = [];
+let nativeSpaceBridge: NativeSpaceBridge | null | undefined;
+let nativeSpaceBridgeApplyFailed = false;
+const nativeRequire = Module.createRequire(__filename);
+
+function loadNativeSpaceBridge(): NativeSpaceBridge | null {
+  if (process.platform !== 'darwin') {
+    return null;
+  }
+
+  if (nativeSpaceBridge !== undefined) {
+    return nativeSpaceBridge;
+  }
+
+  const candidates = [
+    path.join(app.getAppPath(), 'native/window-space/build/Release/window_space.node'),
+    path.join(process.resourcesPath, 'app.asar.unpacked/native/window-space/build/Release/window_space.node'),
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+
+    try {
+      const bridge = nativeRequire(candidate) as NativeSpaceBridge;
+      if (typeof bridge.configurePiPWindow === 'function') {
+        nativeSpaceBridge = bridge;
+        return nativeSpaceBridge;
+      }
+    } catch (error) {
+      console.warn('Failed loading native macOS space bridge:', error);
+    }
+  }
+
+  nativeSpaceBridge = null;
+  console.warn('Native macOS space bridge not found. Run `npm run native:build` to enable PiP-style space behavior.');
+  return nativeSpaceBridge;
+}
 
 const themes: Record<string, string[]> = {
   Rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6b6b'],
@@ -89,6 +150,55 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  const pinAcrossSpaces = () => {
+    mainWindow.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+
+    const bridge = loadNativeSpaceBridge();
+    if (bridge) {
+      const applied = bridge.configurePiPWindow(mainWindow.getNativeWindowHandle());
+      if (!applied && !nativeSpaceBridgeApplyFailed) {
+        nativeSpaceBridgeApplyFailed = true;
+        console.warn('Native macOS space bridge loaded but could not resolve NSWindow from native handle.');
+      }
+    }
+  };
+
+  pinAcrossSpaces();
+  mainWindow.on('show', pinAcrossSpaces);
+  mainWindow.on('focus', pinAcrossSpaces);
+
+  const ensureWindowVisible = () => {
+    if (mainWindow.isDestroyed()) {
+      return;
+    }
+
+    const bounds = mainWindow.getBounds();
+    const cursorDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const { workArea } = cursorDisplay;
+
+    const visibleArea = getIntersectionArea(bounds, workArea);
+    const totalArea = Math.max(1, bounds.width * bounds.height);
+    const visibilityRatio = visibleArea / totalArea;
+
+    if (visibilityRatio >= 0.6) {
+      return;
+    }
+
+    const margin = 10;
+    const targetX = workArea.x + workArea.width - bounds.width - margin;
+    const targetY = workArea.y + workArea.height - bounds.height - margin;
+    mainWindow.setPosition(targetX, targetY);
+  };
+
+  const visibilityGuard = setInterval(ensureWindowVisible, 220);
+  mainWindow.on('move', ensureWindowVisible);
+  mainWindow.on('show', ensureWindowVisible);
+  mainWindow.on('closed', () => clearInterval(visibilityGuard));
 
   // Position bottom-right with 10px margin
   const { workArea } = screen.getPrimaryDisplay();
@@ -171,11 +281,18 @@ const createWindow = () => {
           },
         })),
       },
-      ...(cameraDevices.length > 1
-        ? [
-            {
-              label: 'Camera',
-              submenu: cameraDevices.map(({ id, label }) => ({
+      {
+        label: 'Camera',
+        submenu: [
+          {
+            label: 'Refresh Cameras',
+            click: () => {
+              mainWindow.webContents.send('request-camera-list');
+            },
+          },
+          { type: 'separator' },
+          ...(cameraDevices.length > 0
+            ? cameraDevices.map(({ id, label }) => ({
                 label,
                 type: 'radio' as const,
                 checked: currentCamera ? currentCamera === id : cameraDevices[0]?.id === id,
@@ -184,10 +301,15 @@ const createWindow = () => {
                   mainWindow.webContents.send('set-camera', id);
                   saveSettings();
                 },
-              })),
-            },
-          ]
-        : []),
+              }))
+            : [
+                {
+                  label: 'No cameras detected yet',
+                  enabled: false,
+                },
+              ]),
+        ],
+      },
       { type: 'separator' },
       { label: 'Exit', click: () => app.quit() },
     ]);
@@ -195,9 +317,15 @@ const createWindow = () => {
   });
 
   // Receive camera list from renderer
-  ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
-    cameraDevices = devices;
-  });
+ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
+  cameraDevices = devices;
+});
+
+ipcMain.on('active-camera', (_event, deviceId: string) => {
+  if (!deviceId) return;
+  currentCamera = deviceId;
+  saveSettings();
+});
 
   // Send saved settings to renderer once the page is ready
   mainWindow.webContents.on('did-finish-load', () => {
@@ -224,6 +352,10 @@ ipcMain.on('quit-app', () => {
 });
 
 app.on('ready', () => {
+  if (process.platform === 'darwin') {
+    app.setActivationPolicy('accessory');
+  }
+
   if (app.dock) {
     app.dock.hide();
   }

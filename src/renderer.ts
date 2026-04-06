@@ -11,6 +11,7 @@ declare global {
     machole: {
       quitApp: () => void;
       sendCameraList: (devices: { id: string; label: string }[]) => void;
+      setActiveCamera: (deviceId: string) => void;
       onToggleBlur: (callback: (enabled: boolean) => void) => void;
       onToggleAutoframe: (callback: (enabled: boolean) => void) => void;
       onToggleCloseup: (callback: (enabled: boolean) => void) => void;
@@ -18,6 +19,7 @@ declare global {
       onSetTheme: (callback: (colors: string[]) => void) => void;
       onSetSize: (callback: (size: number) => void) => void;
       onSetCamera: (callback: (deviceId: string) => void) => void;
+      onRequestCameraList: (callback: () => void) => void;
     };
   }
 }
@@ -81,6 +83,7 @@ let smoothVolume = 0;
 let analyser: AnalyserNode | null = null;
 let analyserData: Uint8Array | null = null;
 let currentSize = 200;
+let audioStream: MediaStream | null = null;
 
 function drawFrequencyBars() {
   const w = vizCanvas.width;
@@ -156,6 +159,11 @@ function getVolume(): number {
 
 let selectedCameraId = '';
 
+async function getCameraDevices(): Promise<MediaDeviceInfo[]> {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((d) => d.kind === 'videoinput');
+}
+
 async function startCamera(deviceId?: string): Promise<MediaStream> {
   // Stop existing video tracks
   if (video.srcObject instanceof MediaStream) {
@@ -165,11 +173,66 @@ async function startCamera(deviceId?: string): Promise<MediaStream> {
   const videoConstraint = deviceId ? { deviceId: { exact: deviceId } } : true;
   const stream = await navigator.mediaDevices.getUserMedia({
     video: videoConstraint,
-    audio: true,
   });
   video.srcObject = stream;
   await video.play();
+  const activeId = stream.getVideoTracks()[0]?.getSettings().deviceId;
+  if (activeId) {
+    selectedCameraId = activeId;
+    window.machole.setActiveCamera(activeId);
+  }
   return stream;
+}
+
+async function startCameraWithFallback(deviceId?: string): Promise<void> {
+  if (!deviceId) {
+    await startCamera();
+    return;
+  }
+
+  try {
+    await startCamera(deviceId);
+  } catch {
+    const cameras = await getCameraDevices();
+    for (const camera of cameras) {
+      if (!camera.deviceId || camera.deviceId === deviceId) {
+        continue;
+      }
+      try {
+        await startCamera(camera.deviceId);
+        return;
+      } catch {
+        // Try next camera.
+      }
+    }
+    await startCamera();
+  }
+}
+
+async function setupAudioAnalyser() {
+  if (audioStream instanceof MediaStream) {
+    audioStream.getAudioTracks().forEach((t) => t.stop());
+  }
+
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+
+    const source = audioCtx.createMediaStreamSource(audioStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyserData = new Uint8Array(analyser.fftSize);
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+  } catch {
+    // Mic access is optional; pulse will be disabled when unavailable.
+    analyser = null;
+    analyserData = null;
+    freqData = null;
+  }
 }
 
 function updateVideoDimensions() {
@@ -187,64 +250,70 @@ function updateVideoDimensions() {
 }
 
 async function enumerateAndSendCameras() {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const cameras = devices
-    .filter((d) => d.kind === 'videoinput')
+  const cameras = (await getCameraDevices())
     .map((d, i) => ({ id: d.deviceId, label: d.label || `Camera ${i + 1}` }));
   window.machole.sendCameraList(cameras);
 }
+
+window.machole.onRequestCameraList(() => {
+  enumerateAndSendCameras().catch((err) => console.error('Failed to refresh cameras:', err));
+});
 
 // Camera switch handler
 window.machole.onSetCamera((deviceId) => {
   if (deviceId && deviceId !== selectedCameraId) {
     selectedCameraId = deviceId;
-    startCamera(deviceId)
+    startCameraWithFallback(deviceId)
       .then(() => updateVideoDimensions())
       .catch((err) => console.error('Failed to switch camera:', err));
   }
 });
 
 async function init() {
-  const stream = await startCamera(selectedCameraId || undefined);
-
-  // Enumerate cameras now that we have permission
   await enumerateAndSendCameras();
 
-  // Set up audio analyser
-  const audioCtx = new AudioContext();
-  if (audioCtx.state === 'suspended') {
-    await audioCtx.resume();
-  }
-  const source = audioCtx.createMediaStreamSource(stream);
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-  source.connect(analyser);
-  analyserData = new Uint8Array(analyser.fftSize);
-  freqData = new Uint8Array(analyser.frequencyBinCount);
+  await startCameraWithFallback(selectedCameraId || undefined);
+
+  // Enumerate again after permission so labels are available
+  await enumerateAndSendCameras();
+
+  // Hide loader as soon as camera is live
+  document.getElementById('loader').classList.add('hidden');
+
+  // Set up optional audio analyser for pulse effect
+  await setupAudioAnalyser();
 
   updateVideoDimensions();
   const vw = video.videoWidth;
   const vh = video.videoHeight;
 
-  const segmenter = await bodySegmentation.createSegmenter(
-    bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
-    {
-      runtime: 'mediapipe',
-      modelType: 'landscape',
-      solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
-    },
-  );
+  let segmenter: bodySegmentation.BodySegmenter | null = null;
+  let detector: faceDetection.FaceDetector | null = null;
 
-  const detector = await faceDetection.createDetector(
-    faceDetection.SupportedModels.MediaPipeFaceDetector,
-    {
-      runtime: 'mediapipe',
-      solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
-    },
-  );
+  try {
+    segmenter = await bodySegmentation.createSegmenter(
+      bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
+      {
+        runtime: 'mediapipe',
+        modelType: 'landscape',
+        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
+      },
+    );
+  } catch {
+    blurEnabled = false;
+  }
 
-  // Hide loader once everything is ready
-  document.getElementById('loader').classList.add('hidden');
+  try {
+    detector = await faceDetection.createDetector(
+      faceDetection.SupportedModels.MediaPipeFaceDetector,
+      {
+        runtime: 'mediapipe',
+        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
+      },
+    );
+  } catch {
+    autoframeEnabled = false;
+  }
 
   const root = document.documentElement;
 
@@ -272,7 +341,7 @@ async function init() {
     }
 
     // Step 1: Render to offscreen canvas (with or without blur)
-    if (blurEnabled) {
+    if (blurEnabled && segmenter) {
       const segmentation = await segmenter.segmentPeople(video);
       await bodySegmentation.drawBokehEffect(
         offscreen,
@@ -292,7 +361,7 @@ async function init() {
     }
 
     // Step 2: Auto-frame (detect face, compute crop, draw cropped region)
-    if (autoframeEnabled) {
+    if (autoframeEnabled && detector) {
       const faces = await detector.estimateFaces(video);
 
       if (faces.length > 0) {
@@ -340,7 +409,10 @@ async function init() {
   renderFrame();
 }
 
-init().catch((err) => console.error('Failed to initialize:', err));
+init().catch((err) => {
+  console.error('Failed to initialize:', err);
+  document.getElementById('loader').classList.add('hidden');
+});
 
 document.addEventListener('click', (event) => {
   if (event.shiftKey) {

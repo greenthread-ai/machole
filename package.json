@@ -8,6 +8,8 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
+    "install": "bash ./scripts/install-local.sh",
+    "native:build": "npx node-gyp rebuild --directory native/window-space",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
