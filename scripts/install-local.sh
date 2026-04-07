@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-npm run native:build
 npm run package
 
 mkdir -p "$HOME/.local/bin"
@@ -23,12 +22,4 @@ EOF
 
 chmod +x "$HOME/.local/bin/machole"
 
-cp "$PWD/scripts/aerospace-follow-workspace.sh" "$HOME/.local/bin/machole-follow-workspace"
-chmod +x "$HOME/.local/bin/machole-follow-workspace"
-
-cp "$PWD/scripts/aerospace-workspace.sh" "$HOME/.local/bin/machole-workspace"
-chmod +x "$HOME/.local/bin/machole-workspace"
-
 echo "Installed machole launcher at $HOME/.local/bin/machole"
-echo "Installed AeroSpace helper at $HOME/.local/bin/machole-follow-workspace"
-echo "Installed AeroSpace workspace wrapper at $HOME/.local/bin/machole-workspace"

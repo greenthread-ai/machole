@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu, screen } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
-import Module from 'node:module';
 import started from 'electron-squirrel-startup';
 
 if (started) {
@@ -18,10 +17,6 @@ interface Settings {
   currentTheme: string;
   currentSize: number;
   currentCamera: string;
-}
-
-interface NativeSpaceBridge {
-  configurePiPWindow: (nativeWindowHandle: Buffer) => boolean;
 }
 
 interface Rect {
@@ -87,44 +82,6 @@ let currentTheme = settings.currentTheme;
 let currentSize = settings.currentSize;
 let currentCamera = settings.currentCamera;
 let cameraDevices: { id: string; label: string }[] = [];
-let nativeSpaceBridge: NativeSpaceBridge | null | undefined;
-let nativeSpaceBridgeApplyFailed = false;
-const nativeRequire = Module.createRequire(__filename);
-
-function loadNativeSpaceBridge(): NativeSpaceBridge | null {
-  if (process.platform !== 'darwin') {
-    return null;
-  }
-
-  if (nativeSpaceBridge !== undefined) {
-    return nativeSpaceBridge;
-  }
-
-  const candidates = [
-    path.join(app.getAppPath(), 'native/window-space/build/Release/window_space.node'),
-    path.join(process.resourcesPath, 'app.asar.unpacked/native/window-space/build/Release/window_space.node'),
-  ];
-
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-
-    try {
-      const bridge = nativeRequire(candidate) as NativeSpaceBridge;
-      if (typeof bridge.configurePiPWindow === 'function') {
-        nativeSpaceBridge = bridge;
-        return nativeSpaceBridge;
-      }
-    } catch (error) {
-      console.warn('Failed loading native macOS space bridge:', error);
-    }
-  }
-
-  nativeSpaceBridge = null;
-  console.warn('Native macOS space bridge not found. Run `npm run native:build` to enable PiP-style space behavior.');
-  return nativeSpaceBridge;
-}
 
 const themes: Record<string, string[]> = {
   Rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6b6b'],
@@ -150,27 +107,6 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
-
-  const pinAcrossSpaces = () => {
-    mainWindow.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-      skipTransformProcessType: true,
-    });
-    mainWindow.setAlwaysOnTop(true, 'screen-saver');
-
-    const bridge = loadNativeSpaceBridge();
-    if (bridge) {
-      const applied = bridge.configurePiPWindow(mainWindow.getNativeWindowHandle());
-      if (!applied && !nativeSpaceBridgeApplyFailed) {
-        nativeSpaceBridgeApplyFailed = true;
-        console.warn('Native macOS space bridge loaded but could not resolve NSWindow from native handle.');
-      }
-    }
-  };
-
-  pinAcrossSpaces();
-  mainWindow.on('show', pinAcrossSpaces);
-  mainWindow.on('focus', pinAcrossSpaces);
 
   const ensureWindowVisible = () => {
     if (mainWindow.isDestroyed()) {
@@ -352,10 +288,6 @@ ipcMain.on('quit-app', () => {
 });
 
 app.on('ready', () => {
-  if (process.platform === 'darwin') {
-    app.setActivationPolicy('accessory');
-  }
-
   if (app.dock) {
     app.dock.hide();
   }
