@@ -7,6 +7,11 @@ if (started) {
   app.quit();
 }
 
+// NOTE: this is here so we can install the app without codesigning
+if (process.platform === 'darwin') {
+  app.commandLine.appendSwitch('use-mock-keychain');
+}
+
 const PULSE_BUFFER = 80; // extra space for glow petals
 
 interface Settings {

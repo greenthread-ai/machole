@@ -4,13 +4,15 @@ set -euo pipefail
 
 npm run package
 
-mkdir -p "$HOME/.local/bin"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+
+mkdir -p "$INSTALL_DIR"
 
 APP_PATH="$PWD/out/machole-darwin-arm64/machole.app"
 
 codesign --force --deep --sign - "$APP_PATH"
 
-cat > "$HOME/.local/bin/machole" <<EOF
+cat > "$INSTALL_DIR/machole" <<EOF
 #!/usr/bin/env bash
 APP="$APP_PATH"
 if [ ! -d "\$APP" ]; then
@@ -20,6 +22,6 @@ fi
 exec open -a "\$APP"
 EOF
 
-chmod +x "$HOME/.local/bin/machole"
+chmod +x "$INSTALL_DIR/machole"
 
-echo "Installed machole launcher at $HOME/.local/bin/machole"
+echo "Installed machole launcher at $INSTALL_DIR/machole"
