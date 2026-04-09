@@ -7,6 +7,11 @@ if (started) {
   app.quit();
 }
 
+// NOTE: this is here so we can install the app without codesigning
+if (process.platform === 'darwin') {
+  app.commandLine.appendSwitch('use-mock-keychain');
+}
+
 const PULSE_BUFFER = 80; // extra space for glow petals
 
 interface Settings {
@@ -17,6 +22,13 @@ interface Settings {
   currentTheme: string;
   currentSize: number;
   currentCamera: string;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const defaults: Settings = {
@@ -55,6 +67,17 @@ function saveSettings() {
   fs.writeFileSync(getSettingsPath(), JSON.stringify(data, null, 2));
 }
 
+function getIntersectionArea(a: Rect, b: Rect): number {
+  const left = Math.max(a.x, b.x);
+  const top = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
+
+  const width = Math.max(0, right - left);
+  const height = Math.max(0, bottom - top);
+  return width * height;
+}
+
 const settings = loadSettings();
 let blurEnabled = settings.blurEnabled;
 let autoframeEnabled = settings.autoframeEnabled;
@@ -89,6 +112,34 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  const ensureWindowVisible = () => {
+    if (mainWindow.isDestroyed()) {
+      return;
+    }
+
+    const bounds = mainWindow.getBounds();
+    const cursorDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const { workArea } = cursorDisplay;
+
+    const visibleArea = getIntersectionArea(bounds, workArea);
+    const totalArea = Math.max(1, bounds.width * bounds.height);
+    const visibilityRatio = visibleArea / totalArea;
+
+    if (visibilityRatio >= 0.6) {
+      return;
+    }
+
+    const margin = 10;
+    const targetX = workArea.x + workArea.width - bounds.width - margin;
+    const targetY = workArea.y + workArea.height - bounds.height - margin;
+    mainWindow.setPosition(targetX, targetY);
+  };
+
+  const visibilityGuard = setInterval(ensureWindowVisible, 220);
+  mainWindow.on('move', ensureWindowVisible);
+  mainWindow.on('show', ensureWindowVisible);
+  mainWindow.on('closed', () => clearInterval(visibilityGuard));
 
   // Position bottom-right with 10px margin
   const { workArea } = screen.getPrimaryDisplay();
@@ -171,11 +222,18 @@ const createWindow = () => {
           },
         })),
       },
-      ...(cameraDevices.length > 1
-        ? [
-            {
-              label: 'Camera',
-              submenu: cameraDevices.map(({ id, label }) => ({
+      {
+        label: 'Camera',
+        submenu: [
+          {
+            label: 'Refresh Cameras',
+            click: () => {
+              mainWindow.webContents.send('request-camera-list');
+            },
+          },
+          { type: 'separator' },
+          ...(cameraDevices.length > 0
+            ? cameraDevices.map(({ id, label }) => ({
                 label,
                 type: 'radio' as const,
                 checked: currentCamera ? currentCamera === id : cameraDevices[0]?.id === id,
@@ -184,10 +242,15 @@ const createWindow = () => {
                   mainWindow.webContents.send('set-camera', id);
                   saveSettings();
                 },
-              })),
-            },
-          ]
-        : []),
+              }))
+            : [
+                {
+                  label: 'No cameras detected yet',
+                  enabled: false,
+                },
+              ]),
+        ],
+      },
       { type: 'separator' },
       { label: 'Exit', click: () => app.quit() },
     ]);
@@ -195,9 +258,15 @@ const createWindow = () => {
   });
 
   // Receive camera list from renderer
-  ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
-    cameraDevices = devices;
-  });
+ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
+  cameraDevices = devices;
+});
+
+ipcMain.on('active-camera', (_event, deviceId: string) => {
+  if (!deviceId) return;
+  currentCamera = deviceId;
+  saveSettings();
+});
 
   // Send saved settings to renderer once the page is ready
   mainWindow.webContents.on('did-finish-load', () => {

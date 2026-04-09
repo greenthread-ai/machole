@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('machole', {
   quitApp: () => ipcRenderer.send('quit-app'),
   sendCameraList: (devices: { id: string; label: string }[]) =>
     ipcRenderer.send('camera-list', devices),
+  setActiveCamera: (deviceId: string) => ipcRenderer.send('active-camera', deviceId),
   onToggleBlur: (callback: (enabled: boolean) => void) => {
     ipcRenderer.on('toggle-blur', (_event, enabled: boolean) => callback(enabled));
   },
@@ -24,5 +25,8 @@ contextBridge.exposeInMainWorld('machole', {
   },
   onSetCamera: (callback: (deviceId: string) => void) => {
     ipcRenderer.on('set-camera', (_event, deviceId: string) => callback(deviceId));
+  },
+  onRequestCameraList: (callback: () => void) => {
+    ipcRenderer.on('request-camera-list', () => callback());
   },
 });
