@@ -7,8 +7,10 @@ if (started) {
   app.quit();
 }
 
-// NOTE: this is here so we can install the app without codesigning
-if (process.platform === 'darwin') {
+// Unsigned and ad-hoc builds can't access the real keychain without prompting,
+// so they fall back to a mock keychain. A properly signed build uses the real
+// keychain so cookie encryption (the EnableCookieEncryption fuse) works.
+if (process.platform === 'darwin' && !MACHOLE_SIGNED) {
   app.commandLine.appendSwitch('use-mock-keychain');
 }
 

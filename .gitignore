@@ -90,3 +90,12 @@ typings/
 
 # Electron-Forge
 out/
+
+# Code signing secrets - NEVER commit these
+*.p12
+*.cer
+*.p8
+*.csr
+*.key
+*.provisionprofile
+*.mobileprovision
