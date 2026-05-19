@@ -109,7 +109,6 @@ codesign --verify --deep --strict --verbose=2 /Applications/machole.app
   `EnableEmbeddedAsarIntegrityValidation` fuse on. If a universal build ever
   fails to launch with an integrity error, that fuse is the first thing to test
   toggling in `forge.config.ts`.
-- **App Store** — this pipeline targets direct download only. App Store
-  distribution needs a different certificate (Apple Distribution), a
-  provisioning profile, the app sandbox, and a `.pkg`; it is intentionally out
-  of scope here.
+- **App Store** — this pipeline targets direct download only. Mac App Store
+  distribution (a sandboxed, App-Store-signed `.pkg`) is a separate pipeline —
+  see [`APP_STORE.md`](./APP_STORE.md).

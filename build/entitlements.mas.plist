@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- App Sandbox is mandatory for the Mac App Store. -->
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <!-- Chromium / Electron networking. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+  <!-- Camera + microphone for the overlay and recording. -->
+  <key>com.apple.security.device.camera</key>
+  <true/>
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- Write the finished recording to the location chosen in the Save dialog. -->
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <!-- These must match the provisioning profile. The appstore workflow
+       substitutes the real Team ID for the TEAMID placeholder at build time. -->
+  <key>com.apple.application-identifier</key>
+  <string>TEAMID.ai.greenthread.machole</string>
+  <key>com.apple.developer.team-identifier</key>
+  <string>TEAMID</string>
+</dict>
+</plist>
