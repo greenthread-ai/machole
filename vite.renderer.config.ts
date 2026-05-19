@@ -17,6 +17,7 @@ export default defineConfig({
         countdown: resolve(__dirname, 'countdown.html'),
         area: resolve(__dirname, 'area.html'),
         frame: resolve(__dirname, 'frame.html'),
+        compressing: resolve(__dirname, 'compressing.html'),
       },
     },
   },

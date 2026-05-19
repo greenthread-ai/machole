@@ -10,10 +10,12 @@ Machole also records the screen itself: pick a screen, window, or custom area; a
 
 ## Commands
 
-- `npm start` — Run the app in development mode (electron-forge + Vite)
+- `npm install` — Install dependencies (dev tooling only; no build side effects)
+- `npm run dev` — Build and run the app in development mode (electron-forge + Vite)
+- `npm run build` — Package the app into a runnable `.app` bundle in `out/`
+- `npm run make` — Build distributable installers (`.dmg` / `.zip`)
+- `npm run install-binary` — Build the app and install a `machole` launcher into `~/.local/bin`
 - `npm run lint` — Lint TypeScript files with ESLint
-- `npm run package` — Package the app for distribution
-- `npm run make` — Build distributable installers
 - `npm run icon` — Regenerate `build/icon.icns` from the logo artwork (`scripts/generate-icon.mjs`)
 
 ## Architecture
@@ -38,14 +40,17 @@ This is an **Electron Forge + Vite + TypeScript** project.
 - `countdown.html` + `src/countdown.ts` — full-screen 3-2-1 countdown.
 - `area.html` + `src/area.ts` — drag-to-select capture rectangle.
 - `frame.html` + `src/frame.ts` — animated border drawn around the recorded region while recording.
+- `compressing.html` + `src/compressing.ts` — progress overlay shown while ffmpeg re-encodes the finished recording.
 
-`src/recording-types.ts` holds the shared main↔renderer IPC contract.
+`src/recording-types.ts` holds the shared main↔renderer IPC contract. `src/ffmpeg.ts` (main process) locates an optional system `ffmpeg` and runs the post-recording compression.
 
 Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.config.ts` (the renderer config declares the multi-page `rollupOptions.input`). The Forge config (`forge.config.ts`) wires these via `VitePlugin` and configures Electron Fuses for security hardening at package time.
 
 ## Recording flow
 
-`controls` Record → `picker` → user picks source/area (area uses the `area` window) → `recording-main` stashes the source and runs the `countdown` window → on `countdown:done`, main tells `controls` to begin → `controls` calls `getDisplayMedia`, mixes mic + system audio via an `AudioContext`, and streams `MediaRecorder` chunks to main → on stop, main shows a Save dialog.
+`controls` Record → `picker` → user picks source/area (area uses the `area` window) → `recording-main` stashes the source and runs the `countdown` window → on `countdown:done`, main tells `controls` to begin → `controls` calls `getDisplayMedia` (capture is capped at 30 fps / 4K so the software H.264 encoder doesn't choke), mixes mic + system audio via an `AudioContext`, and streams `MediaRecorder` chunks to main → on stop, main shows a Save dialog.
+
+If a system `ffmpeg` is found (`findFfmpeg` in `src/ffmpeg.ts` probes the usual install dirs — a GUI app doesn't inherit the shell `PATH`), the recording is re-encoded to a smaller H.264 mp4 with the `compressing` overlay showing progress. If ffmpeg is missing or the re-encode fails, the raw recording is saved unchanged — a recording is never lost.
 
 Window content protection: the controls, picker, countdown, and area windows are `setContentProtection(true)` so they stay out of the recording. The camera overlay is **not** protected — the face is meant to be recorded.
 
