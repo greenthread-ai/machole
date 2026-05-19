@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole Recorder</title>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="dragbar">
+        <span class="brand"><span class="brand-dot"></span>Machole</span>
+        <span id="status" class="status">Ready</span>
+      </div>
+
+      <div id="idle-view" class="view">
+        <div class="audio-settings">
+          <label class="audio-row">
+            <span class="audio-label">Microphone</span>
+            <select id="mic-select" class="audio-select"></select>
+          </label>
+          <label class="audio-row">
+            <span class="audio-label">System audio</span>
+            <select id="sys-select" class="audio-select">
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
+        </div>
+        <button id="record-btn" class="record-btn">
+          <span class="rec-glyph"></span> Start Recording
+        </button>
+      </div>
+
+      <div id="rec-view" class="view hidden">
+        <div class="timer-row">
+          <span id="rec-dot" class="rec-dot"></span>
+          <span id="timer" class="timer">00:00</span>
+        </div>
+        <div class="btn-row">
+          <button id="stop-btn" class="ctl-btn" title="Stop">
+            <span class="ico">&#9632;</span><span class="lbl">Stop</span>
+          </button>
+          <button id="pause-btn" class="ctl-btn" title="Pause">
+            <span class="ico">&#10073;&#10073;</span><span class="lbl">Pause</span>
+          </button>
+          <button id="mic-btn" class="ctl-btn" title="Mute mic">
+            <span class="ico">&#127908;</span><span class="lbl">Mute</span>
+          </button>
+          <button id="cam-btn" class="ctl-btn" title="Camera">
+            <span class="ico">&#127909;</span><span class="lbl">Camera</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><kbd>&#8984;&#8679;R</kbd> Rec / Stop</span>
+        <span><kbd>&#8984;&#8679;P</kbd> Pause</span>
+        <span><kbd>&#8984;&#8679;M</kbd> Mute</span>
+        <span><kbd>&#8984;&#8679;E</kbd> Camera</span>
+      </div>
+    </div>
+    <script type="module" src="/src/controls.ts"></script>
+  </body>
+</html>

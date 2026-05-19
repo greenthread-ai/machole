@@ -11,6 +11,7 @@
     "install": "bash ./scripts/install-local.sh",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "icon": "node scripts/generate-icon.mjs",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],

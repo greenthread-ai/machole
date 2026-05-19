@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole Permissions</title>
+  </head>
+  <body>
+    <div class="card">
+      <div class="head">
+        <div class="logo"></div>
+        <h1>Welcome to Machole</h1>
+        <p>Machole needs a few macOS permissions before it can record.</p>
+      </div>
+
+      <div class="perms">
+        <div class="perm" data-type="camera">
+          <div class="perm-info">
+            <strong>Camera</strong>
+            <small>Shows your face in the overlay</small>
+          </div>
+          <div class="perm-action">
+            <span class="perm-status">…</span>
+            <button class="perm-btn">Allow</button>
+          </div>
+        </div>
+
+        <div class="perm" data-type="microphone">
+          <div class="perm-info">
+            <strong>Microphone</strong>
+            <small>Records your voice</small>
+          </div>
+          <div class="perm-action">
+            <span class="perm-status">…</span>
+            <button class="perm-btn">Allow</button>
+          </div>
+        </div>
+
+        <div class="perm" data-type="screen">
+          <div class="perm-info">
+            <strong>Screen Recording</strong>
+            <small>Captures your screen and system audio</small>
+            <small id="screen-note" class="note">
+              After enabling this, Machole must be restarted.
+            </small>
+          </div>
+          <div class="perm-action">
+            <span class="perm-status">…</span>
+            <button class="perm-btn">Open Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <button id="quit-btn" class="ghost">Quit</button>
+        <button id="primary-btn" class="primary" data-action="continue" disabled>
+          Continue
+        </button>
+      </div>
+    </div>
+    <script type="module" src="/src/permissions.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  cursor: crosshair;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* The selection rectangle punches a "hole" by casting a huge shadow that
+   dims everything outside it. */
+.selection {
+  position: fixed;
+  border: 1.5px solid #48dbfb;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.dims {
+  position: absolute;
+  top: -26px;
+  left: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #48dbfb;
+  color: #08222b;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.hint {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #fff;
+  background: rgba(20, 20, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 9px 16px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.hint kbd {
+  font: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
