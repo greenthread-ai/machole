@@ -46,6 +46,12 @@ This is an **Electron Forge + Vite + TypeScript** project.
 
 Vite configs: `vite.main.config.ts`, `vite.preload.config.ts`, `vite.renderer.config.ts` (the renderer config declares the multi-page `rollupOptions.input`). The Forge config (`forge.config.ts`) wires these via `VitePlugin` and configures Electron Fuses for security hardening at package time.
 
+## Distribution
+
+Two macOS build paths, both env-gated in `forge.config.ts` (local builds stay unsigned):
+- **Developer ID** — notarized `.dmg`, triggered by `APPLE_SIGNING_IDENTITY`; built by `.github/workflows/release.yml`. See `docs/RELEASING.md`.
+- **Mac App Store** — sandboxed `.pkg` built with `--platform=mas`, triggered by `APPLE_MAS_IDENTITY`; built by `.github/workflows/appstore.yml`. MAS entitlements are `build/entitlements.mas*.plist`. See `docs/APP_STORE.md`.
+
 ## Recording flow
 
 `controls` Record → `picker` → user picks source/area (area uses the `area` window) → `recording-main` stashes the source and runs the `countdown` window → on `countdown:done`, main tells `controls` to begin → `controls` calls `getDisplayMedia` (capture is capped at 30 fps / 4K so the software H.264 encoder doesn't choke), mixes mic + system audio via an `AudioContext`, and streams `MediaRecorder` chunks to main → on stop, main shows a Save dialog.
