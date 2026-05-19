@@ -164,6 +164,26 @@ async function getCameraDevices(): Promise<MediaDeviceInfo[]> {
   return devices.filter((d) => d.kind === 'videoinput');
 }
 
+// Resolve once the <video> actually has frame dimensions, or reject after a
+// timeout. Some virtual and Continuity (iPhone) cameras connect but never
+// deliver frames; without this guard they feed the WebGL models a zero-size
+// texture and spam GL_INVALID_FRAMEBUFFER_OPERATION errors.
+function waitForVideoReady(timeoutMs = 5000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = performance.now();
+    const tick = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        resolve();
+      } else if (performance.now() - start > timeoutMs) {
+        reject(new Error('Camera produced no video frames'));
+      } else {
+        requestAnimationFrame(tick);
+      }
+    };
+    tick();
+  });
+}
+
 async function startCamera(deviceId?: string): Promise<MediaStream> {
   // Stop existing video tracks
   if (video.srcObject instanceof MediaStream) {
@@ -176,6 +196,16 @@ async function startCamera(deviceId?: string): Promise<MediaStream> {
   });
   video.srcObject = stream;
   await video.play();
+
+  // getUserMedia / play() can resolve before a device actually streams.
+  // Reject here so startCameraWithFallback can move on to another camera.
+  try {
+    await waitForVideoReady();
+  } catch (err) {
+    stream.getTracks().forEach((t) => t.stop());
+    throw err;
+  }
+
   const activeId = stream.getVideoTracks()[0]?.getSettings().deviceId;
   if (activeId) {
     selectedCameraId = activeId;
@@ -272,7 +302,13 @@ window.machole.onSetCamera((deviceId) => {
 async function init() {
   await enumerateAndSendCameras();
 
-  await startCameraWithFallback(selectedCameraId || undefined);
+  try {
+    await startCameraWithFallback(selectedCameraId || undefined);
+  } catch (err) {
+    // No camera could deliver frames. The render loop still starts below
+    // and recovers automatically once a working camera is selected.
+    console.error('No working camera available:', err);
+  }
 
   // Enumerate again after permission so labels are available
   await enumerateAndSendCameras();
@@ -282,10 +318,6 @@ async function init() {
 
   // Set up optional audio analyser for pulse effect
   await setupAudioAnalyser();
-
-  updateVideoDimensions();
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
 
   let segmenter: bodySegmentation.BodySegmenter | null = null;
   let detector: faceDetection.FaceDetector | null = null;
@@ -321,6 +353,20 @@ async function init() {
   sizeVisualizer(currentSize);
 
   async function renderFrame() {
+    // Skip processing until the camera is actually delivering frames —
+    // feeding a zero-size video to the WebGL models throws framebuffer
+    // errors. Reading the size each frame also lets the overlay recover
+    // when the camera is swapped.
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (vw === 0 || vh === 0 || video.readyState < 2) {
+      requestAnimationFrame(renderFrame);
+      return;
+    }
+    if (offscreen.width !== vw || offscreen.height !== vh) {
+      updateVideoDimensions();
+    }
+
     // Audio pulse — frequency bars + subtle ring breath
     if (pulseEnabled && analyser && freqData) {
       const rawVolume = getVolume();
