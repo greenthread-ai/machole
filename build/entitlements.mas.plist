@@ -5,6 +5,15 @@
   <!-- App Sandbox is mandatory for the Mac App Store. -->
   <key>com.apple.security.app-sandbox</key>
   <true/>
+  <!-- V8's JIT compiler allocates executable memory; without these the
+       app SIGTRAPs deep in v8::Isolate::Initialize on launch. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Required for Electron to load its bundled framework + helper apps. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
   <!-- Chromium / Electron networking. -->
   <key>com.apple.security.network.client</key>
   <true/>
