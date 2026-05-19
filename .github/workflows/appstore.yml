@@ -15,12 +15,12 @@ name: App Store
 # fails so the misconfiguration is obvious.
 #
 # Required repository secrets (see docs/APP_STORE.md):
-#   MACOS_MAS_CERT_P12_BASE64    base64 of a .p12 containing BOTH the app
-#                                signing cert ("Apple Distribution" or "3rd
-#                                Party Mac Developer Application") and the
-#                                installer cert ("3rd Party Mac Developer
-#                                Installer").
-#   MACOS_MAS_CERT_PASSWORD      password for that .p12
+#   MACOS_MAS_APP_CERT_P12_BASE64        base64 of the "Apple Distribution"
+#                                        cert .p12
+#   MACOS_MAS_APP_CERT_PASSWORD          password for that .p12
+#   MACOS_MAS_INSTALLER_CERT_P12_BASE64  base64 of the "3rd Party Mac
+#                                        Developer Installer" cert .p12
+#   MACOS_MAS_INSTALLER_CERT_PASSWORD    password for that .p12
 #   APPLE_MAS_IDENTITY           app cert common name
 #   APPLE_MAS_INSTALLER_IDENTITY installer cert common name
 #   APPLE_TEAM_ID                10-character Apple Developer Team ID
@@ -64,11 +64,11 @@ jobs:
       - name: Check signing secrets
         id: check
         env:
-          MACOS_MAS_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_CERT_P12_BASE64 }}
+          MACOS_MAS_APP_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_APP_CERT_P12_BASE64 }}
           APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          if [ -n "$MACOS_MAS_CERT_P12_BASE64" ] && [ -n "$APPLE_MAS_IDENTITY" ] && [ -n "$APPLE_TEAM_ID" ]; then
+          if [ -n "$MACOS_MAS_APP_CERT_P12_BASE64" ] && [ -n "$APPLE_MAS_IDENTITY" ] && [ -n "$APPLE_TEAM_ID" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
@@ -106,21 +106,28 @@ jobs:
       - name: Import signing certificates
         if: steps.check.outputs.configured == 'true'
         env:
-          MACOS_MAS_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_CERT_P12_BASE64 }}
-          MACOS_MAS_CERT_PASSWORD: ${{ secrets.MACOS_MAS_CERT_PASSWORD }}
+          MACOS_MAS_APP_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_APP_CERT_P12_BASE64 }}
+          MACOS_MAS_APP_CERT_PASSWORD: ${{ secrets.MACOS_MAS_APP_CERT_PASSWORD }}
+          MACOS_MAS_INSTALLER_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_INSTALLER_CERT_P12_BASE64 }}
+          MACOS_MAS_INSTALLER_CERT_PASSWORD: ${{ secrets.MACOS_MAS_INSTALLER_CERT_PASSWORD }}
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          echo "$MACOS_MAS_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/mas-cert.p12"
-          security import "$RUNNER_TEMP/mas-cert.p12" -P "$MACOS_MAS_CERT_PASSWORD" \
-            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          # Import the app-signing and installer certificates (separate .p12s).
+          import_p12() {
+            echo "$1" | base64 --decode > "$RUNNER_TEMP/import.p12"
+            security import "$RUNNER_TEMP/import.p12" -P "$2" \
+              -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+            rm "$RUNNER_TEMP/import.p12"
+          }
+          import_p12 "$MACOS_MAS_APP_CERT_P12_BASE64" "$MACOS_MAS_APP_CERT_PASSWORD"
+          import_p12 "$MACOS_MAS_INSTALLER_CERT_P12_BASE64" "$MACOS_MAS_INSTALLER_CERT_PASSWORD"
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: \
             -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
-          rm "$RUNNER_TEMP/mas-cert.p12"
 
       - name: Write provisioning profile
         if: steps.check.outputs.configured == 'true'

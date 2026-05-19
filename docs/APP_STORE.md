@@ -60,11 +60,12 @@ Settings → Accounts → Manage Certificates):
 2. **Mac Installer Distribution** — signs the `.pkg`. Its common name is
    `3rd Party Mac Developer Installer: …`.
 
-Export **both** from Keychain Access (My Certificates → select both →
-Export…) into a single `mas-cert.p12` with a password.
+Export each one from Keychain Access (My Certificates → right-click →
+Export…) into its own `.p12` with a password — e.g. `AppleDistribution.p12`
+and `MacInstallerDistribution.p12`.
 
-Record the exact common names — they become `APPLE_MAS_IDENTITY` and
-`APPLE_MAS_INSTALLER_IDENTITY`.
+Record the exact common names (`security find-identity -v`) — they become
+`APPLE_MAS_IDENTITY` and `APPLE_MAS_INSTALLER_IDENTITY`.
 
 ## 3. Provisioning profile
 
@@ -86,8 +87,10 @@ its Key ID, and the Issuer ID.
 
 | Secret | Value |
 |---|---|
-| `MACOS_MAS_CERT_P12_BASE64` | base64 of `mas-cert.p12` (both certs) |
-| `MACOS_MAS_CERT_PASSWORD` | password for that `.p12` |
+| `MACOS_MAS_APP_CERT_P12_BASE64` | base64 of the Apple Distribution `.p12` |
+| `MACOS_MAS_APP_CERT_PASSWORD` | password for that `.p12` |
+| `MACOS_MAS_INSTALLER_CERT_P12_BASE64` | base64 of the Mac Installer `.p12` |
+| `MACOS_MAS_INSTALLER_CERT_PASSWORD` | password for that `.p12` |
 | `APPLE_MAS_IDENTITY` | e.g. `Apple Distribution: Acme Inc (AB12CD34EF)` |
 | `APPLE_MAS_INSTALLER_IDENTITY` | e.g. `3rd Party Mac Developer Installer: Acme Inc (AB12CD34EF)` |
 | `APPLE_TEAM_ID` | your 10-character Team ID |
@@ -96,8 +99,12 @@ its Key ID, and the Issuer ID.
 | `APPLE_API_KEY_ID` | the API Key ID |
 | `APPLE_API_ISSUER_ID` | the API Issuer ID |
 
+The `APPLE_API_*` three are shared with the Developer ID release pipeline —
+if that is already set up, they exist already. Generate the base64 values:
+
 ```bash
-base64 -i mas-cert.p12 | pbcopy
+base64 -i AppleDistribution.p12 | pbcopy
+base64 -i MacInstallerDistribution.p12 | pbcopy
 base64 -i machole.provisionprofile | pbcopy
 base64 -i AuthKey_XXXXXXXXXX.p8 | pbcopy
 ```
