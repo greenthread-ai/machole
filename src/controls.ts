@@ -18,6 +18,8 @@ const micBtn = $('mic-btn');
 const camBtn = $('cam-btn');
 const recDot = $('rec-dot');
 const timerEl = $('timer');
+const micSelect = $('mic-select') as HTMLSelectElement;
+const sysSelect = $('sys-select') as HTMLSelectElement;
 
 let state: State = 'idle';
 
@@ -37,6 +39,11 @@ let chunkQueue: Promise<void> = Promise.resolve();
 let micMuted = false;
 let cameraOn = true;
 let hasMic = false;
+
+// Audio source choices, set from the dropdowns before recording.
+// micId: '' = system default, 'off' = no microphone, else a device id.
+let selectedMicId = '';
+let systemAudioEnabled = true;
 
 // --- timer ---
 let elapsed = 0;
@@ -154,20 +161,56 @@ function buildMixedAudio(): MediaStreamTrack | null {
   return dest.stream.getAudioTracks()[0];
 }
 
+/** Populate the microphone dropdown with the available input devices. */
+async function populateAudioDevices(): Promise<void> {
+  // A throwaway capture unlocks device labels for this window.
+  try {
+    const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+    probe.getTracks().forEach((t) => t.stop());
+  } catch {
+    // Microphone unavailable — the list still offers a default entry.
+  }
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(
+    (d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications',
+  );
+
+  const previous = selectedMicId;
+  micSelect.innerHTML = '';
+  micSelect.add(new Option('Default microphone', ''));
+  mics.forEach((d, i) => micSelect.add(new Option(d.label || `Microphone ${i + 1}`, d.deviceId)));
+  micSelect.add(new Option('No microphone', 'off'));
+
+  // Keep the previous choice if that device is still present.
+  micSelect.value = [...micSelect.options].some((o) => o.value === previous) ? previous : '';
+  selectedMicId = micSelect.value;
+}
+
 async function beginRecording(payload: BeginPayload): Promise<void> {
   setStatus('Starting…');
   try {
-    displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: systemAudioEnabled,
+    });
   } catch {
     setStatus('Screen capture denied');
     window.bridge.send('rec:stopped');
     return;
   }
 
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
+  if (selectedMicId === 'off') {
     micStream = null;
+  } else {
+    try {
+      const audioConstraint: boolean | MediaTrackConstraints = selectedMicId
+        ? { deviceId: { exact: selectedMicId } }
+        : true;
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint });
+    } catch {
+      micStream = null;
+    }
   }
   hasMic = !!micStream && micStream.getAudioTracks().length > 0;
   micBtn.classList.toggle('disabled', !hasMic);
@@ -313,6 +356,17 @@ pauseBtn.addEventListener('click', () => togglePause());
 micBtn.addEventListener('click', () => toggleMic());
 camBtn.addEventListener('click', () => toggleCamera());
 
+micSelect.addEventListener('change', () => {
+  selectedMicId = micSelect.value;
+});
+sysSelect.addEventListener('change', () => {
+  systemAudioEnabled = sysSelect.value === 'on';
+});
+// Refresh the device list when a mic is plugged in or removed.
+navigator.mediaDevices.addEventListener('devicechange', () => {
+  populateAudioDevices().catch(() => undefined);
+});
+
 window.bridge.on('rec:begin', (payload) => {
   beginRecording(payload as BeginPayload).catch(() => {
     setStatus('Failed to start');
@@ -322,3 +376,4 @@ window.bridge.on('rec:begin', (payload) => {
 window.bridge.on('shortcut', (action) => handleShortcut(action as ShortcutAction));
 
 setState('idle');
+populateAudioDevices().catch(() => undefined);

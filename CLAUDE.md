@@ -33,7 +33,7 @@ This is an **Electron Forge + Vite + TypeScript** project.
 **Renderer** — a multi-page app (one Vite renderer, several HTML entries):
 - `index.html` + `src/renderer.ts` — the camera overlay (face).
 - `permissions.html` + `src/permissions.ts` — first-launch permissions onboarding.
-- `controls.html` + `src/controls.ts` — always-on-screen controls overlay; **hosts the `MediaRecorder`** that captures/mixes screen + mic + system audio.
+- `controls.html` + `src/controls.ts` — always-on-screen controls overlay; **hosts the `MediaRecorder`** that captures/mixes screen + mic + system audio. The microphone device and system-audio on/off are chosen here before recording.
 - `picker.html` + `src/picker.ts` — screen/window/area source picker.
 - `countdown.html` + `src/countdown.ts` — full-screen 3-2-1 countdown.
 - `area.html` + `src/area.ts` — drag-to-select capture rectangle.

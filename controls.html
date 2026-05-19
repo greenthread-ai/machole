@@ -12,6 +12,19 @@
       </div>
 
       <div id="idle-view" class="view">
+        <div class="audio-settings">
+          <label class="audio-row">
+            <span class="audio-label">Microphone</span>
+            <select id="mic-select" class="audio-select"></select>
+          </label>
+          <label class="audio-row">
+            <span class="audio-label">System audio</span>
+            <select id="sys-select" class="audio-select">
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
+        </div>
         <button id="record-btn" class="record-btn">
           <span class="rec-glyph"></span> Start Recording
         </button>

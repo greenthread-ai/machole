@@ -56,7 +56,7 @@ function sendToControls(channel: string, payload?: unknown): void {
 
 function createControlsWindow(): void {
   const width = 380;
-  const height = 196;
+  const height = 286;
   const { workArea } = screen.getPrimaryDisplay();
   controlsWindow = new BrowserWindow({
     width,
