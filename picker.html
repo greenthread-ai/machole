@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Choose a source</title>
+  </head>
+  <body>
+    <div class="picker">
+      <div class="header">
+        <h1>Record your screen</h1>
+        <div class="header-actions">
+          <button id="refresh-btn" class="ghost-btn">Refresh</button>
+          <button id="close-btn" class="ghost-btn">Cancel</button>
+        </div>
+      </div>
+
+      <div id="body" class="body">
+        <button id="area-card" class="area-card">
+          <span class="area-icon"></span>
+          <span class="area-text">
+            <strong>Select an Area</strong>
+            <small>Drag a custom rectangle to record</small>
+          </span>
+        </button>
+
+        <div class="section">
+          <h2>Screens</h2>
+          <div id="screens" class="grid"></div>
+        </div>
+
+        <div class="section">
+          <h2>Windows</h2>
+          <div id="windows" class="grid"></div>
+        </div>
+
+        <div id="loading" class="loading">Finding sources…</div>
+      </div>
+
+      <div class="footer">
+        Audio: microphone + system audio are captured automatically.
+      </div>
+    </div>
+    <script type="module" src="/src/picker.ts"></script>
+  </body>
+</html>

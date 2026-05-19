@@ -16,8 +16,16 @@ The overlay is framed by a customizable animated gradient. Users can define the 
 -   **Right-Click Interaction**: All user interaction, including accessing settings and controls, is handled via a context (right-click) menu. (Menu functionality is currently a stub.)
 -   **Free Movement**: The overlay can be repositioned anywhere on the screen by simply dragging it with the mouse.
 
+### Built-In Screen Recording
+Machole records the screen itself, so QuickTime is no longer needed.
+-   **Source selection**: Choose a full screen, a single window, or a drag-selected custom area.
+-   **Countdown**: A full-screen 3-2-1 countdown plays before capture begins.
+-   **Combined capture**: Screen video, the microphone, and system audio (speakers) are captured and mixed into one file.
+-   **Output**: Saved as `.mp4` (H.264) where the OS supports it, otherwise `.webm`, via a Save dialog.
+-   **Controls overlay**: An always-on-screen, draggable panel with record / stop / pause / mute / camera controls and their global keyboard shortcuts. It is excluded from the recording itself.
+
 ### Immediate Launch & Permissions
-Upon launch, Machole starts immediately. If camera access permissions have not been granted, the application will prompt the user for them.
+Upon launch, Machole starts immediately. It prompts for camera, microphone, and screen-recording permissions as they are first needed.
 
 ## Compatibility Notes
 

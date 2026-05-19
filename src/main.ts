@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, screen } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
+import { initRecording } from './recording-main';
 
 if (started) {
   app.quit();
@@ -90,6 +91,10 @@ let currentSize = settings.currentSize;
 let currentCamera = settings.currentCamera;
 let cameraDevices: { id: string; label: string }[] = [];
 
+// The camera overlay window. The recording module needs a handle to it so
+// the "camera on/off" control can hide/show the face during a recording.
+let cameraWindow: BrowserWindow | null = null;
+
 const themes: Record<string, string[]> = {
   Rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6b6b'],
   Sunset: ['#ff6b6b', '#ff9f43', '#feca57', '#ff9f43', '#ff6b6b'],
@@ -138,10 +143,15 @@ const createWindow = () => {
     mainWindow.setPosition(targetX, targetY);
   };
 
+  cameraWindow = mainWindow;
+
   const visibilityGuard = setInterval(ensureWindowVisible, 220);
   mainWindow.on('move', ensureWindowVisible);
   mainWindow.on('show', ensureWindowVisible);
-  mainWindow.on('closed', () => clearInterval(visibilityGuard));
+  mainWindow.on('closed', () => {
+    clearInterval(visibilityGuard);
+    cameraWindow = null;
+  });
 
   // Position bottom-right with 10px margin
   const { workArea } = screen.getPrimaryDisplay();
@@ -299,6 +309,7 @@ app.on('ready', () => {
     app.dock.hide();
   }
   createWindow();
+  initRecording(() => cameraWindow);
 });
 
 app.on('window-all-closed', () => {

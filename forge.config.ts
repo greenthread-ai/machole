@@ -24,7 +24,7 @@ const config: ForgeConfig = {
       NSCameraUsageDescription:
         'Machole displays your camera feed in the on-screen overlay.',
       NSMicrophoneUsageDescription:
-        'Machole uses your microphone to drive the audio pulse animation.',
+        'Machole records your microphone and drives the audio pulse animation.',
     },
     osxSign: isSigning
       ? {
@@ -64,6 +64,12 @@ const config: ForgeConfig = {
         },
         {
           entry: 'src/preload.ts',
+          config: 'vite.preload.config.ts',
+          target: 'preload',
+        },
+        {
+          // Generic IPC bridge shared by the recording windows.
+          entry: 'src/overlay-preload.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
