@@ -9,9 +9,16 @@ Machole has two macOS distribution paths:
   document covers.
 
 The App Store build is produced by the
-[`appstore.yml`](../.github/workflows/appstore.yml) workflow. It is **manual**
-— run it from **Actions → App Store → Run workflow** — because App Store
-submissions are deliberate.
+[`appstore.yml`](../.github/workflows/appstore.yml) workflow. It runs
+**automatically when a GitHub Release is published** (the same trigger as the
+Developer ID `.dmg`), and can also be run **manually** from
+**Actions → App Store → Run workflow**.
+
+Uploading only *stages* the build in App Store Connect — you still attach it to
+a version and submit for review there. The CI run number is used as the
+`CFBundleVersion`, so repeated builds of the same version never collide. If the
+App Store signing secrets are not configured, a release-triggered run simply
+skips with a warning, so it never fails an ordinary release.
 
 ---
 
@@ -102,13 +109,17 @@ The workflow substitutes `APPLE_TEAM_ID` into the `TEAMID` placeholder in
 
 ## 6. Build & submit
 
-1. **Actions → App Store → Run workflow.**
-2. Enter the **version** (e.g. `1.2.0`) and leave **submit** ticked to upload
-   to App Store Connect. Untick it to only build the `.pkg` (downloadable as a
-   workflow artifact) without uploading.
-3. When it finishes, the build appears in App Store Connect under your app's
-   **TestFlight / macOS Builds**. From there, attach it to a version and submit
-   for review.
+**On a release** — publishing a GitHub Release (see `RELEASING.md` step 5)
+triggers this workflow automatically and uploads the build.
+
+**Manually** — **Actions → App Store → Run workflow**. Enter the **version**
+(e.g. `1.2.0`); leave **submit** ticked to upload, or untick it to only build
+the `.pkg` (downloadable as a workflow artifact). A manual run with missing
+secrets fails loudly, unlike a release-triggered run.
+
+Either way, when it finishes the build appears in App Store Connect under your
+app's **macOS Builds / TestFlight**. From there, attach it to a version and
+submit for review.
 
 ---
 

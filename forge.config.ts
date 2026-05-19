@@ -37,6 +37,10 @@ const config: ForgeConfig = {
     appCategoryType: 'public.app-category.productivity',
     // macOS picks up build/icon.icns; regenerate with `npm run icon`.
     icon: 'build/icon',
+    // CFBundleVersion. CI sets this to a unique, increasing build number so
+    // App Store Connect never rejects a re-upload as a duplicate; locally it
+    // falls back to the app version from package.json.
+    buildVersion: process.env.MACHOLE_BUILD_VERSION || undefined,
     // macOS shows these strings in the camera/microphone permission prompts.
     extendInfo: {
       NSCameraUsageDescription:

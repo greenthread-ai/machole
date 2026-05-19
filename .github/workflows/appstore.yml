@@ -3,28 +3,35 @@ name: App Store
 # Builds the sandboxed, App-Store-signed installer (.pkg) with the `mas`
 # Electron variant and uploads it to App Store Connect.
 #
-# Run it manually: Actions -> App Store -> Run workflow. App Store submissions
-# are deliberate, so this is never triggered automatically.
+# Runs automatically when a GitHub Release is published, and can also be run
+# manually (Actions -> App Store -> Run workflow).
 #
-# Required repository secrets:
-#   MACOS_MAS_CERT_P12_BASE64   base64 of a .p12 containing BOTH the app
-#                               signing cert ("Apple Distribution" or "3rd
-#                               Party Mac Developer Application") and the
-#                               installer cert ("3rd Party Mac Developer
-#                               Installer").
-#   MACOS_MAS_CERT_PASSWORD     password for that .p12
-#   APPLE_MAS_IDENTITY          app cert common name, e.g.
-#                               "Apple Distribution: Acme (TEAMID)"
-#   APPLE_MAS_INSTALLER_IDENTITY installer cert common name, e.g.
-#                               "3rd Party Mac Developer Installer: Acme (TEAMID)"
-#   APPLE_TEAM_ID               10-character Apple Developer Team ID
-#   APPLE_PROVISIONING_PROFILE_BASE64  base64 of the Mac App Store provisioning
-#                               profile for bundle id ai.greenthread.machole
-#   APPLE_API_KEY_P8            base64 of the App Store Connect API key (.p8)
-#   APPLE_API_KEY_ID            the API key id
-#   APPLE_API_ISSUER_ID         the API key issuer id
+# Uploading only *stages* a build in App Store Connect — you still attach it
+# to a version and submit for review there. The CI run number is used as the
+# CFBundleVersion, so repeated builds never collide.
+#
+# If the App Store signing secrets are not configured, a release-triggered run
+# skips with a warning (so it never fails an ordinary release); a manual run
+# fails so the misconfiguration is obvious.
+#
+# Required repository secrets (see docs/APP_STORE.md):
+#   MACOS_MAS_CERT_P12_BASE64    base64 of a .p12 containing BOTH the app
+#                                signing cert ("Apple Distribution" or "3rd
+#                                Party Mac Developer Application") and the
+#                                installer cert ("3rd Party Mac Developer
+#                                Installer").
+#   MACOS_MAS_CERT_PASSWORD      password for that .p12
+#   APPLE_MAS_IDENTITY           app cert common name
+#   APPLE_MAS_INSTALLER_IDENTITY installer cert common name
+#   APPLE_TEAM_ID                10-character Apple Developer Team ID
+#   APPLE_PROVISIONING_PROFILE_BASE64  base64 of the Mac App Store profile
+#   APPLE_API_KEY_P8             base64 of the App Store Connect API key (.p8)
+#   APPLE_API_KEY_ID             the API key id
+#   APPLE_API_ISSUER_ID          the API key issuer id
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
@@ -43,30 +50,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Resolve build parameters
+        id: params
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "submit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "submit=${{ inputs.submit }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check signing secrets
+        id: check
+        env:
+          MACOS_MAS_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_CERT_P12_BASE64 }}
+          APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$MACOS_MAS_CERT_P12_BASE64" ] && [ -n "$APPLE_MAS_IDENTITY" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            if [ "${{ github.event_name }}" = "release" ]; then
+              echo "::warning::App Store signing secrets are not configured — skipping the App Store build."
+            else
+              echo "::error::App Store signing secrets are not configured. See docs/APP_STORE.md."
+              exit 1
+            fi
+          fi
+
       - name: Set up Node
+        if: steps.check.outputs.configured == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: steps.check.outputs.configured == 'true'
         run: npm ci
 
       - name: Set version
-        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
-
-      - name: Check signing secrets
-        env:
-          MACOS_MAS_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_CERT_P12_BASE64 }}
-          APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          if [ -z "$MACOS_MAS_CERT_P12_BASE64" ] || [ -z "$APPLE_MAS_IDENTITY" ] || [ -z "$APPLE_TEAM_ID" ]; then
-            echo "::error::App Store signing secrets are not configured. See the comment at the top of this workflow."
-            exit 1
-          fi
+        if: steps.check.outputs.configured == 'true'
+        run: npm version "${{ steps.params.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Substitute Team ID into MAS entitlements
+        if: steps.check.outputs.configured == 'true'
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
@@ -74,6 +104,7 @@ jobs:
           echo "Entitlements:" && cat build/entitlements.mas.plist
 
       - name: Import signing certificates
+        if: steps.check.outputs.configured == 'true'
         env:
           MACOS_MAS_CERT_P12_BASE64: ${{ secrets.MACOS_MAS_CERT_P12_BASE64 }}
           MACOS_MAS_CERT_PASSWORD: ${{ secrets.MACOS_MAS_CERT_PASSWORD }}
@@ -92,6 +123,7 @@ jobs:
           rm "$RUNNER_TEMP/mas-cert.p12"
 
       - name: Write provisioning profile
+        if: steps.check.outputs.configured == 'true'
         env:
           APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
         run: |
@@ -99,14 +131,19 @@ jobs:
             > "$RUNNER_TEMP/machole.provisionprofile"
 
       - name: Build App Store installer (.pkg)
+        if: steps.check.outputs.configured == 'true'
         env:
           APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
           APPLE_MAS_INSTALLER_IDENTITY: ${{ secrets.APPLE_MAS_INSTALLER_IDENTITY }}
           APPLE_PROVISIONING_PROFILE: ${{ runner.temp }}/machole.provisionprofile
+          # Unique, increasing CFBundleVersion so App Store Connect never sees
+          # a duplicate build number.
+          MACHOLE_BUILD_VERSION: ${{ github.run_number }}
         run: npm run make -- --platform=mas --arch=universal
 
       - name: Locate the .pkg
         id: pkg
+        if: steps.check.outputs.configured == 'true'
         run: |
           PKG="$(find out/make -name '*.pkg' -print -quit)"
           if [ -z "$PKG" ]; then
@@ -117,13 +154,14 @@ jobs:
           echo "Built $PKG"
 
       - name: Upload .pkg artifact
+        if: steps.check.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: machole-appstore-pkg
           path: ${{ steps.pkg.outputs.path }}
 
       - name: Upload to App Store Connect
-        if: ${{ inputs.submit }}
+        if: steps.check.outputs.configured == 'true' && steps.params.outputs.submit == 'true'
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
