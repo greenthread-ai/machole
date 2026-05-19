@@ -11,10 +11,12 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'index.html'),
+        permissions: resolve(__dirname, 'permissions.html'),
         controls: resolve(__dirname, 'controls.html'),
         picker: resolve(__dirname, 'picker.html'),
         countdown: resolve(__dirname, 'countdown.html'),
         area: resolve(__dirname, 'area.html'),
+        frame: resolve(__dirname, 'frame.html'),
       },
     },
   },

@@ -19,6 +19,8 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     appBundleId: 'ai.greenthread.machole',
+    // macOS picks up build/icon.icns; regenerate with `npm run icon`.
+    icon: 'build/icon',
     // macOS shows these strings in the camera/microphone permission prompts.
     extendInfo: {
       NSCameraUsageDescription:

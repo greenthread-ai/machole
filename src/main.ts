@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
 import { initRecording } from './recording-main';
+import { ensurePermissions } from './permissions-main';
 
 if (started) {
   app.quit();
@@ -308,8 +309,12 @@ app.on('ready', () => {
   if (app.dock) {
     app.dock.hide();
   }
-  createWindow();
-  initRecording(() => cameraWindow);
+  // Gate the camera overlay and recorder behind a permissions check so the
+  // app never loads into a broken state on first launch.
+  ensurePermissions(() => {
+    createWindow();
+    initRecording(() => cameraWindow);
+  });
 });
 
 app.on('window-all-closed', () => {

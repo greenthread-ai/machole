@@ -14,6 +14,7 @@ Machole also records the screen itself: pick a screen, window, or custom area; a
 - `npm run lint` — Lint TypeScript files with ESLint
 - `npm run package` — Package the app for distribution
 - `npm run make` — Build distributable installers
+- `npm run icon` — Regenerate `build/icon.icns` from the logo artwork (`scripts/generate-icon.mjs`)
 
 ## Architecture
 
@@ -21,7 +22,9 @@ This is an **Electron Forge + Vite + TypeScript** project.
 
 **Main process:**
 - `src/main.ts` — Creates the camera overlay window, its context menu, and app lifecycle. Uses `electron-squirrel-startup` for Windows install/uninstall shortcuts.
-- `src/recording-main.ts` — Recording orchestration: owns the recording windows, the `desktopCapturer` source list, the `setDisplayMediaRequestHandler` (which grants `audio: 'loopback'` for system audio), global shortcuts, and streaming recorded chunks to a temp file then saving via a dialog.
+- `src/permissions-main.ts` — Startup permissions gate (`ensurePermissions`): checks camera/microphone/screen access via `systemPreferences`, shows onboarding when something is missing, and only loads the rest of the app once all three are granted.
+- `src/recording-main.ts` — Recording orchestration: owns the recording windows, the `desktopCapturer` source list, the `setDisplayMediaRequestHandler` (which grants `audio: 'loopback'` for system audio), global shortcuts, the recording-border window, and streaming recorded chunks to a temp file then saving via a dialog.
+- `src/window-utils.ts` — `loadRendererPage` helper for loading a multi-page renderer entry.
 
 **Preload scripts:**
 - `src/preload.ts` — Bridge for the camera overlay renderer.
@@ -29,10 +32,12 @@ This is an **Electron Forge + Vite + TypeScript** project.
 
 **Renderer** — a multi-page app (one Vite renderer, several HTML entries):
 - `index.html` + `src/renderer.ts` — the camera overlay (face).
+- `permissions.html` + `src/permissions.ts` — first-launch permissions onboarding.
 - `controls.html` + `src/controls.ts` — always-on-screen controls overlay; **hosts the `MediaRecorder`** that captures/mixes screen + mic + system audio.
 - `picker.html` + `src/picker.ts` — screen/window/area source picker.
 - `countdown.html` + `src/countdown.ts` — full-screen 3-2-1 countdown.
 - `area.html` + `src/area.ts` — drag-to-select capture rectangle.
+- `frame.html` + `src/frame.ts` — animated border drawn around the recorded region while recording.
 
 `src/recording-types.ts` holds the shared main↔renderer IPC contract.
 

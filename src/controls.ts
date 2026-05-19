@@ -262,6 +262,7 @@ function togglePause(): void {
     stopTimer();
     setState('paused');
     setStatus('Paused');
+    window.bridge.send('rec:paused', true);
   } else if (recorder.state === 'paused') {
     recorder.resume();
     timerId = setInterval(() => {
@@ -270,6 +271,7 @@ function togglePause(): void {
     }, 1000);
     setState('recording');
     setStatus(`Recording · ${recordedExt.toUpperCase()}`);
+    window.bridge.send('rec:paused', false);
   }
 }
 

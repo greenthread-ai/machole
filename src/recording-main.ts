@@ -10,6 +10,7 @@ import {
 } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
+import { loadRendererPage } from './window-utils';
 import type { BeginPayload, CaptureSource, CropFraction, ShortcutAction } from './recording-types';
 
 // Recording orchestration lives in the main process: it owns the windows,
@@ -22,6 +23,8 @@ let controlsWindow: BrowserWindow | null = null;
 let pickerWindow: BrowserWindow | null = null;
 let countdownWindow: BrowserWindow | null = null;
 let areaWindow: BrowserWindow | null = null;
+// Border drawn around the recorded region while recording.
+let frameWindow: BrowserWindow | null = null;
 
 let getCameraWindow: () => BrowserWindow | null = () => null;
 
@@ -29,19 +32,17 @@ let getCameraWindow: () => BrowserWindow | null = () => null;
 let pendingSourceId: string | null = null;
 // Config carried from source selection through the countdown to "begin".
 let pendingBegin: BeginPayload | null = null;
+// Where to draw the recording border once the countdown finishes.
+let pendingFrame: {
+  displayId: string;
+  mode: BeginPayload['mode'];
+  rect: Electron.Rectangle | null;
+} | null = null;
 let recordingActive = false;
 
 // Temp file the controls window streams recorded chunks into.
 let recordingTmpPath: string | null = null;
 let recordingStream: fs.WriteStream | null = null;
-
-function loadPage(win: BrowserWindow, page: string): void {
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    win.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/${page}`);
-  } else {
-    win.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/${page}`));
-  }
-}
 
 function cursorDisplay(): Electron.Display {
   return screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
@@ -79,7 +80,7 @@ function createControlsWindow(): void {
   controlsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   // Keep the controls/shortcuts overlay out of the recording itself.
   controlsWindow.setContentProtection(true);
-  loadPage(controlsWindow, 'controls.html');
+  loadRendererPage(controlsWindow, 'controls.html');
   controlsWindow.on('closed', () => {
     controlsWindow = null;
   });
@@ -110,7 +111,7 @@ function openPicker(): void {
   });
   pickerWindow.setAlwaysOnTop(true, 'screen-saver');
   pickerWindow.setContentProtection(true);
-  loadPage(pickerWindow, 'picker.html');
+  loadRendererPage(pickerWindow, 'picker.html');
   pickerWindow.on('closed', () => {
     pickerWindow = null;
   });
@@ -145,7 +146,7 @@ function selectArea(): Promise<{ display: Electron.Display; rect: Electron.Recta
     areaWindow.setAlwaysOnTop(true, 'screen-saver');
     areaWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     areaWindow.setContentProtection(true);
-    loadPage(areaWindow, 'area.html');
+    loadRendererPage(areaWindow, 'area.html');
     areaWindow.once('ready-to-show', () => areaWindow?.focus());
 
     const finish = (rect: Electron.Rectangle | null) => {
@@ -193,10 +194,56 @@ function startCountdown(displayId: string): void {
   countdownWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   // The countdown is a cue for the user, not part of the recording.
   countdownWindow.setContentProtection(true);
-  loadPage(countdownWindow, 'countdown.html');
+  loadRendererPage(countdownWindow, 'countdown.html');
   countdownWindow.on('closed', () => {
     countdownWindow = null;
   });
+}
+
+// --- Recording border -------------------------------------------------------
+
+function openFrame(): void {
+  if (!pendingFrame) return;
+  const display =
+    screen.getAllDisplays().find((d) => String(d.id) === String(pendingFrame?.displayId)) ??
+    cursorDisplay();
+  const { x, y, width, height } = display.bounds;
+  frameWindow = new BrowserWindow({
+    x,
+    y,
+    width,
+    height,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    hasShadow: false,
+    skipTaskbar: true,
+    focusable: false,
+    fullscreenable: false,
+    enableLargerThanScreen: true,
+    backgroundColor: '#00000000',
+    webPreferences: { preload: OVERLAY_PRELOAD, backgroundThrottling: false },
+  });
+  frameWindow.setAlwaysOnTop(true, 'screen-saver');
+  frameWindow.setIgnoreMouseEvents(true);
+  frameWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // The border is a guide for the user, not part of the recording.
+  frameWindow.setContentProtection(true);
+  loadRendererPage(frameWindow, 'frame.html');
+  const frame = pendingFrame;
+  frameWindow.webContents.on('did-finish-load', () => {
+    frameWindow?.webContents.send('frame:config', { mode: frame.mode, rect: frame.rect });
+  });
+  frameWindow.on('closed', () => {
+    frameWindow = null;
+  });
+  // Keep the controls panel above the border line.
+  controlsWindow?.moveTop();
+}
+
+function closeFrame(): void {
+  frameWindow?.close();
+  frameWindow = null;
 }
 
 // --- Recording lifecycle ----------------------------------------------------
@@ -221,9 +268,15 @@ function unregisterRecordingShortcuts(): void {
 
 /** Begin a session: stash the source, run the countdown, then tell the
  *  controls window to start the MediaRecorder. */
-function beginSession(sourceId: string, payload: BeginPayload, displayId: string): void {
+function beginSession(
+  sourceId: string,
+  payload: BeginPayload,
+  displayId: string,
+  rect: Electron.Rectangle | null = null,
+): void {
   pendingSourceId = sourceId;
   pendingBegin = payload;
+  pendingFrame = { displayId, mode: payload.mode, rect };
   startCountdown(displayId);
 }
 
@@ -231,6 +284,8 @@ function tearDownRecording(): void {
   recordingActive = false;
   pendingSourceId = null;
   pendingBegin = null;
+  pendingFrame = null;
+  closeFrame();
   unregisterRecordingShortcuts();
   getCameraWindow()?.show();
 }
@@ -305,7 +360,12 @@ function registerIpc(): void {
       width: rect.width / display.size.width,
       height: rect.height / display.size.height,
     };
-    beginSession(screenSource.id, { mode: 'area', crop }, String(display.id));
+    beginSession(screenSource.id, { mode: 'area', crop }, String(display.id), rect);
+  });
+
+  // Pause/resume reported by the controls window -> recolour the border.
+  ipcMain.on('rec:paused', (_e, paused: boolean) => {
+    frameWindow?.webContents.send('frame:state', paused ? 'paused' : 'recording');
   });
 
   // Countdown finished -> hand off to the recorder.
@@ -316,6 +376,7 @@ function registerIpc(): void {
     recordingActive = true;
     registerRecordingShortcuts();
     sendToControls('rec:begin', pendingBegin);
+    openFrame();
   });
 
   // --- chunk streaming to a temp file ---
