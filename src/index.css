@@ -17,6 +17,11 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* The whole window is a drag handle. Without this, only the thin
+     gradient ring on .overlay was draggable — clicks on the camera
+     image (inside .circle) did nothing because -webkit-app-region
+     does not inherit in Chromium. */
+  -webkit-app-region: drag;
 }
 
 .overlay {

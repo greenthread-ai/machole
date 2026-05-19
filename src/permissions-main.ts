@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, screen, shell, systemPreferences } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  desktopCapturer,
+  ipcMain,
+  screen,
+  shell,
+  systemPreferences,
+} from 'electron';
 import path from 'node:path';
 import { loadRendererPage } from './window-utils';
 
@@ -86,7 +94,21 @@ export function ensurePermissions(startApp: () => void): void {
     return status(type);
   });
 
-  ipcMain.on('perm:open-settings', (_e, type: MediaType) => {
+  ipcMain.on('perm:open-settings', async (_e, type: MediaType) => {
+    if (type === 'screen') {
+      // macOS only adds an app to the Screen Recording list once it has
+      // attempted to capture. Triggering this here puts Machole into the
+      // list with the toggle off, so the user just flips the switch
+      // instead of "+ Add"-browsing to find the app.
+      try {
+        await desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: { width: 1, height: 1 },
+        });
+      } catch {
+        // Best effort — open the panel regardless.
+      }
+    }
     shell.openExternal(`x-apple.systempreferences:com.apple.preference.security?${PANE[type]}`);
   });
 
