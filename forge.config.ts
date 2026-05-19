@@ -9,8 +9,8 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 // Code signing + notarization only run when the Apple credentials are present
-// in the environment (i.e. in CI on a published release). Local `npm start`
-// and `npm run package` have no credentials and stay unsigned.
+// in the environment (i.e. in CI on a published release). Local `npm run dev`
+// and `npm run build` have no credentials and stay unsigned.
 const signingIdentity = process.env.APPLE_SIGNING_IDENTITY;
 const notarizeApiKey = process.env.APPLE_API_KEY_PATH;
 const isSigning = Boolean(signingIdentity);

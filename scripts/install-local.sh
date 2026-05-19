@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-npm run package
+npm run build
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 

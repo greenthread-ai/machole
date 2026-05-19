@@ -191,7 +191,14 @@ async function beginRecording(payload: BeginPayload): Promise<void> {
   setStatus('Starting…');
   try {
     displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
+      // Cap framerate and resolution: 30 fps keeps the file size down, and the
+      // 4K ceiling keeps capture under the software H.264 encoder's ~9.4 MP
+      // limit (a Retina display otherwise fails to init the encoder).
+      video: {
+        frameRate: { ideal: 30, max: 30 },
+        width: { max: 3840 },
+        height: { max: 2160 },
+      },
       audio: systemAudioEnabled,
     });
   } catch {
@@ -238,7 +245,9 @@ function startRecorder(stream: MediaStream): void {
   const mime = pickMimeType();
   recordedExt = mime.includes('mp4') ? 'mp4' : 'webm';
 
-  const options: MediaRecorderOptions = { videoBitsPerSecond: 8_000_000 };
+  // 4 Mbps is ample for screen content and roughly halves the file size
+  // versus the old 8 Mbps; ffmpeg compression shrinks it further when saved.
+  const options: MediaRecorderOptions = { videoBitsPerSecond: 4_000_000 };
   if (mime) options.mimeType = mime;
   recorder = new MediaRecorder(stream, options);
 
@@ -265,13 +274,16 @@ async function finalizeRecording(): Promise<void> {
   stopTimer();
   await chunkQueue;
   setStatus('Saving…');
-  const result = await window.bridge.invoke<{ saved: boolean; path?: string }>('rec:finalize', {
-    ext: recordedExt,
-  });
+  const result = await window.bridge.invoke<{
+    saved: boolean;
+    path?: string;
+    compressed?: boolean;
+  }>('rec:finalize', { ext: recordedExt, durationSec: elapsed });
   cleanupStreams();
   window.bridge.send('rec:stopped');
   setState('idle');
-  setStatus(result?.saved ? 'Saved ✓' : 'Discarded');
+  if (!result?.saved) setStatus('Discarded');
+  else setStatus(result.compressed ? 'Compressed ✓' : 'Saved ✓');
 }
 
 function cleanupStreams(): void {

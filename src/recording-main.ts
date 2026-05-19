@@ -11,6 +11,7 @@ import {
 import path from 'node:path';
 import fs from 'node:fs';
 import { loadRendererPage } from './window-utils';
+import { compress, findFfmpeg } from './ffmpeg';
 import type { BeginPayload, CaptureSource, CropFraction, ShortcutAction } from './recording-types';
 
 // Recording orchestration lives in the main process: it owns the windows,
@@ -25,6 +26,8 @@ let countdownWindow: BrowserWindow | null = null;
 let areaWindow: BrowserWindow | null = null;
 // Border drawn around the recorded region while recording.
 let frameWindow: BrowserWindow | null = null;
+// Progress overlay shown while ffmpeg compresses the finished recording.
+let compressingWindow: BrowserWindow | null = null;
 
 let getCameraWindow: () => BrowserWindow | null = () => null;
 
@@ -246,6 +249,42 @@ function closeFrame(): void {
   frameWindow = null;
 }
 
+// --- Compression overlay ----------------------------------------------------
+
+function openCompressing(): void {
+  const display = cursorDisplay();
+  const width = 380;
+  const height = 150;
+  compressingWindow = new BrowserWindow({
+    width,
+    height,
+    x: Math.round(display.workArea.x + (display.workArea.width - width) / 2),
+    y: Math.round(display.workArea.y + (display.workArea.height - height) / 2),
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    hasShadow: false,
+    skipTaskbar: true,
+    focusable: false,
+    fullscreenable: false,
+    backgroundColor: '#00000000',
+    webPreferences: { preload: OVERLAY_PRELOAD, backgroundThrottling: false },
+  });
+  compressingWindow.setAlwaysOnTop(true, 'screen-saver');
+  compressingWindow.setIgnoreMouseEvents(true);
+  compressingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  loadRendererPage(compressingWindow, 'compressing.html');
+  compressingWindow.on('closed', () => {
+    compressingWindow = null;
+  });
+}
+
+function closeCompressing(): void {
+  compressingWindow?.close();
+  compressingWindow = null;
+}
+
 // --- Recording lifecycle ----------------------------------------------------
 
 const RECORDING_SHORTCUTS: Record<string, ShortcutAction> = {
@@ -296,6 +335,23 @@ function timestamp(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(
     d.getMinutes(),
   )}.${p(d.getSeconds())}`;
+}
+
+/** Move a file, copying across volumes if a plain rename fails. */
+function moveFile(from: string, to: string): void {
+  try {
+    fs.renameSync(from, to);
+  } catch {
+    // The temp dir may be on a different volume than the destination.
+    fs.copyFileSync(from, to);
+    fs.unlink(from, () => undefined);
+  }
+}
+
+/** Return `filePath` with its extension replaced by `ext`. */
+function swapExtension(filePath: string, ext: string): string {
+  const base = path.basename(filePath, path.extname(filePath));
+  return path.join(path.dirname(filePath), `${base}.${ext}`);
 }
 
 // --- IPC + handler wiring ---------------------------------------------------
@@ -389,34 +445,67 @@ function registerIpc(): void {
     recordingStream?.write(Buffer.from(payload.buffer));
   });
 
-  ipcMain.handle('rec:finalize', async (_e, payload: { ext: string }) => {
-    await new Promise<void>((resolve) => {
-      if (recordingStream) recordingStream.end(() => resolve());
-      else resolve();
-    });
-    recordingStream = null;
-    const tmp = recordingTmpPath;
-    recordingTmpPath = null;
-    if (!tmp) return { saved: false };
+  ipcMain.handle(
+    'rec:finalize',
+    async (_e, payload: { ext: string; durationSec?: number }) => {
+      await new Promise<void>((resolve) => {
+        if (recordingStream) recordingStream.end(() => resolve());
+        else resolve();
+      });
+      recordingStream = null;
+      const tmp = recordingTmpPath;
+      recordingTmpPath = null;
+      if (!tmp) return { saved: false };
 
-    const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Save recording',
-      defaultPath: path.join(app.getPath('videos'), `Machole ${timestamp()}.${payload.ext}`),
-      filters: [{ name: 'Video', extensions: [payload.ext] }],
-    });
-    if (canceled || !filePath) {
-      fs.unlink(tmp, () => undefined);
-      return { saved: false };
-    }
-    try {
-      fs.renameSync(tmp, filePath);
-    } catch {
-      // Temp dir may be on a different volume than the destination.
-      fs.copyFileSync(tmp, filePath);
-      fs.unlink(tmp, () => undefined);
-    }
-    return { saved: true, path: filePath };
-  });
+      // Compression re-encodes to mp4, so the saved file is mp4 whenever
+      // ffmpeg is available; otherwise we keep what the recorder produced.
+      const ffmpegPath = findFfmpeg();
+      const outExt = ffmpegPath ? 'mp4' : payload.ext;
+
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Save recording',
+        defaultPath: path.join(app.getPath('videos'), `Machole ${timestamp()}.${outExt}`),
+        filters: [{ name: 'Video', extensions: [outExt] }],
+      });
+      if (canceled || !filePath) {
+        fs.unlink(tmp, () => undefined);
+        return { saved: false };
+      }
+
+      // No ffmpeg on this machine — save the raw recording, as before.
+      if (!ffmpegPath) {
+        moveFile(tmp, filePath);
+        return { saved: true, path: filePath, compressed: false };
+      }
+
+      // Compress the temp file straight to the chosen destination, showing a
+      // progress overlay. If anything fails, fall back to the raw recording
+      // so a recording is never lost.
+      openCompressing();
+      try {
+        await compress({
+          ffmpegPath,
+          input: tmp,
+          output: filePath,
+          durationSec: payload.durationSec ?? 0,
+          onProgress: (fraction) => {
+            compressingWindow?.webContents.send('compress:progress', fraction);
+          },
+        });
+        closeCompressing();
+        fs.unlink(tmp, () => undefined);
+        return { saved: true, path: filePath, compressed: true };
+      } catch (err) {
+        console.error('Compression failed; saving the raw recording instead:', err);
+        closeCompressing();
+        fs.unlink(filePath, () => undefined); // discard the partial output
+        const rawPath =
+          payload.ext === outExt ? filePath : swapExtension(filePath, payload.ext);
+        moveFile(tmp, rawPath);
+        return { saved: true, path: rawPath, compressed: false };
+      }
+    },
+  );
 
   // Controls window reports the recorder has fully stopped.
   ipcMain.on('rec:stopped', () => tearDownRecording());
