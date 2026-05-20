@@ -9,6 +9,43 @@ if (started) {
   app.quit();
 }
 
+// In production / MAS builds renderer console output never reaches the
+// macOS unified log, the terminal, or anywhere else visible. Mirror every
+// renderer console message (and any explicit logToFile calls from main)
+// into a plain file in the app container so we can `cat` it via CLI when
+// something fails silently in a TestFlight build.
+//   ~/Library/Containers/ai.greenthread.machole/Data/Library/Application Support/machole/machole.log
+let logFilePath: string | null = null;
+
+function logToFile(line: string): void {
+  if (!logFilePath) return;
+  try {
+    fs.appendFileSync(logFilePath, `${new Date().toISOString()} ${line}\n`);
+  } catch {
+    // Best effort — never let logging break the app.
+  }
+}
+
+interface RendererConsoleEvent {
+  level: number | string;
+  message: string;
+  lineNumber?: number;
+  sourceId?: string;
+}
+
+const RENDERER_LEVELS = ['verbose', 'info', 'warning', 'error'];
+
+function setupRendererLogging(): void {
+  app.on('web-contents-created', (_event, contents) => {
+    contents.on('console-message', (event: unknown) => {
+      const e = event as RendererConsoleEvent;
+      const level =
+        typeof e.level === 'number' ? RENDERER_LEVELS[e.level] ?? String(e.level) : String(e.level);
+      logToFile(`[renderer ${level}] ${e.message} (${e.sourceId ?? ''}:${e.lineNumber ?? 0})`);
+    });
+  });
+}
+
 // Unsigned and ad-hoc builds can't access the real keychain without prompting,
 // so they fall back to a mock keychain. A properly signed build uses the real
 // keychain so cookie encryption (the EnableCookieEncryption fuse) works.
@@ -114,12 +151,20 @@ const createWindow = () => {
     alwaysOnTop: true,
     hasShadow: false,
     resizable: false,
-    roundedCorners: false,
+    // roundedCorners: false changes the underlying NSWindow class on macOS
+    // and stopped this window from being draggable under the App Sandbox /
+    // mas Electron variant. Leave it at the default (true) — the visible
+    // content is a circle drawn in CSS, so the rectangular window's corners
+    // are transparent anyway.
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  // Belt and braces — drag should work via -webkit-app-region anyway, but
+  // be explicit about the OS-level movability under sandbox.
+  mainWindow.setMovable(true);
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   const ensureWindowVisible = () => {
     if (mainWindow.isDestroyed()) {
@@ -146,11 +191,11 @@ const createWindow = () => {
 
   cameraWindow = mainWindow;
 
-  const visibilityGuard = setInterval(ensureWindowVisible, 220);
-  mainWindow.on('move', ensureWindowVisible);
+  // No periodic poll and no `move` handler — both call setPosition and were
+  // suspected of interrupting user drags in the MAS sandbox build. Only the
+  // initial position and a one-shot check on show remain.
   mainWindow.on('show', ensureWindowVisible);
   mainWindow.on('closed', () => {
-    clearInterval(visibilityGuard);
     cameraWindow = null;
   });
 
@@ -309,6 +354,22 @@ app.on('ready', () => {
   if (app.dock) {
     app.dock.hide();
   }
+
+  // Set up file logging as the very first thing so anything we log from here
+  // on lands in the file.
+  try {
+    const userData = app.getPath('userData');
+    fs.mkdirSync(userData, { recursive: true });
+    logFilePath = path.join(userData, 'machole.log');
+    fs.writeFileSync(logFilePath, '');
+  } catch {
+    logFilePath = null;
+  }
+  logToFile(
+    `launch electron=${process.versions.electron} platform=${process.platform} signed=${MACHOLE_SIGNED} sandboxed=${(process as NodeJS.Process & { sandboxed?: boolean }).sandboxed ?? 'unknown'}`,
+  );
+  setupRendererLogging();
+
   // Gate the camera overlay and recorder behind a permissions check so the
   // app never loads into a broken state on first launch.
   ensurePermissions(() => {
