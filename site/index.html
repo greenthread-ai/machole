@@ -33,7 +33,10 @@
 
     <section class="hero">
       <div class="wrap">
-        <div class="hero-mark"></div>
+        <div class="hero-mark">
+          <div class="pulse"></div>
+          <img src="assets/face.jpg" alt="" class="hero-face" />
+        </div>
         <h1>
           Your face. <span class="accent">In every recording.</span>
         </h1>
@@ -42,7 +45,7 @@
           — recorded together, in one file, on your Mac.
         </p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://apps.apple.com/app/id0000000000">
+          <a class="btn btn-primary" href="https://apps.apple.com/app/id6770940835">
             Mac App Store
           </a>
           <a class="btn btn-secondary" href="https://github.com/greenthread-ai/machole/releases/latest">
@@ -138,5 +141,27 @@
         </div>
       </div>
     </footer>
+
+    <script>
+      // Decorative audio-reactive-style pulse around the hero mark — bars
+      // around the ring with randomized lengths / speeds / colours so it
+      // reads as "live", not as a metronome.
+      (function () {
+        const pulse = document.querySelector('.hero-mark .pulse');
+        if (!pulse) return;
+        const colours = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+        const N = 36;
+        for (let i = 0; i < N; i += 1) {
+          const bar = document.createElement('span');
+          bar.className = 'bar';
+          bar.style.setProperty('--bar-angle', (i / N) * 360 + 'deg');
+          bar.style.setProperty('--delay', (Math.random() * -2).toFixed(2) + 's');
+          bar.style.setProperty('--duration', (1.1 + Math.random() * 1.5).toFixed(2) + 's');
+          bar.style.setProperty('--max-len', Math.floor(12 + Math.random() * 18) + 'px');
+          bar.style.setProperty('--color', colours[Math.floor(Math.random() * colours.length)]);
+          pulse.appendChild(bar);
+        }
+      })();
+    </script>
   </body>
 </html>
