@@ -3,8 +3,23 @@ import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import * as faceDetection from '@tensorflow-models/face-detection';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import '@mediapipe/selfie_segmentation';
-import '@mediapipe/face_detection';
+// IMPORTANT: do NOT `import '@mediapipe/...'` here. Those packages are UMD
+// scripts that only register their constructors on `window` when loaded via
+// a <script> tag — Vite's ESM bundling does not run that side-effect in
+// production, which is why Background Blur / Auto-Frame silently fail in
+// the App Store build. Instead we load the files copied next to the page
+// (see vite-plugin-static-copy in vite.renderer.config.ts) at runtime.
+
+function loadMediaPipeScript(globalName: string, dir: string, file: string): Promise<void> {
+  if ((window as unknown as Record<string, unknown>)[globalName]) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = new URL(`mediapipe/${dir}/${file}`, document.baseURI).href;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load ${file}`));
+    document.head.appendChild(script);
+  });
+}
 
 declare global {
   interface Window {
@@ -323,12 +338,17 @@ async function init() {
   let detector: faceDetection.FaceDetector | null = null;
 
   try {
+    await loadMediaPipeScript(
+      'SelfieSegmentation',
+      'selfie_segmentation',
+      'selfie_segmentation.js',
+    );
     segmenter = await bodySegmentation.createSegmenter(
       bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
       {
         runtime: 'mediapipe',
         modelType: 'landscape',
-        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
+        solutionPath: new URL('mediapipe/selfie_segmentation', document.baseURI).href,
       },
     );
   } catch (err) {
@@ -337,11 +357,12 @@ async function init() {
   }
 
   try {
+    await loadMediaPipeScript('FaceDetection', 'face_detection', 'face_detection.js');
     detector = await faceDetection.createDetector(
       faceDetection.SupportedModels.MediaPipeFaceDetector,
       {
         runtime: 'mediapipe',
-        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
+        solutionPath: new URL('mediapipe/face_detection', document.baseURI).href,
       },
     );
   } catch (err) {
