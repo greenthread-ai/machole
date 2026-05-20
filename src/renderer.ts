@@ -331,7 +331,8 @@ async function init() {
         solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
       },
     );
-  } catch {
+  } catch (err) {
+    console.error('Background Blur disabled — segmenter failed to load:', err);
     blurEnabled = false;
   }
 
@@ -343,7 +344,8 @@ async function init() {
         solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
       },
     );
-  } catch {
+  } catch (err) {
+    console.error('Auto-Frame / Close-Up disabled — face detector failed to load:', err);
     autoframeEnabled = false;
   }
 
