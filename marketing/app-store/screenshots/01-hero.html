@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole — Hero</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="desktop">
+      <div class="headline" style="right: auto; max-width: 540px;">
+        <h1>Your face.<br />In every recording.</h1>
+        <p>macOS screen recorder with an always-on camera overlay — screen, mic, and system audio together.</p>
+      </div>
+
+      <!-- "Thing being recorded" — faux VS Code window, centered. -->
+      <div class="app-window" style="left: 320px; top: 340px; width: 800px; height: 500px;">
+        <div class="titlebar">
+          <div class="traffic"><span></span><span></span><span></span></div>
+          <div class="title">renderer.ts — machole</div>
+        </div>
+        <div class="codebody">
+          <div class="ln"><span class="num">42</span><span><span class="kw">async function</span> <span class="fn">init</span>() {</span></div>
+          <div class="ln"><span class="num">43</span><span>&nbsp;&nbsp;<span class="kw">const</span> stream = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getDisplayMedia</span>({</span></div>
+          <div class="ln"><span class="num">44</span><span>&nbsp;&nbsp;&nbsp;&nbsp;video: { frameRate: { max: <span class="num-l">30</span> } },</span></div>
+          <div class="ln"><span class="num">45</span><span>&nbsp;&nbsp;&nbsp;&nbsp;audio: <span class="kw">true</span>,</span></div>
+          <div class="ln"><span class="num">46</span><span>&nbsp;&nbsp;});</span></div>
+          <div class="ln"><span class="num">47</span><span>&nbsp;&nbsp;<span class="kw">const</span> recorder = <span class="kw">new</span> <span class="fn">MediaRecorder</span>(stream, {</span></div>
+          <div class="ln"><span class="num">48</span><span>&nbsp;&nbsp;&nbsp;&nbsp;mimeType: <span class="str">'video/mp4;codecs=h264,mp4a.40.2'</span>,</span></div>
+          <div class="ln"><span class="num">49</span><span>&nbsp;&nbsp;});</span></div>
+          <div class="ln"><span class="num">50</span><span>&nbsp;&nbsp;recorder.<span class="fn">start</span>(<span class="num-l">1000</span>);&nbsp;<span class="com">// emit a chunk every second</span></span></div>
+          <div class="ln"><span class="num">51</span><span>}</span></div>
+        </div>
+      </div>
+
+      <!-- Recording border around the editor, centered. -->
+      <div class="rec-border" style="left: 300px; top: 320px; width: 840px; height: 540px;">
+        <div class="badge"><span class="badge-dot"></span>REC</div>
+      </div>
+
+      <!-- Camera overlay sits inside the recording border — what the
+           recorded .mp4 captures: the screen with the face on top. -->
+      <div class="camera-overlay" style="left: 900px; top: 620px;">
+        <div class="ring"></div>
+        <div class="lens">
+          <img src="face.jpg" alt="" />
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole — Controls &amp; Shortcuts</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Larger, hero-sized controls panel for this screenshot. */
+      .hero-panel {
+        position: absolute;
+        left: 120px;
+        bottom: 120px;
+        transform: scale(1.45);
+        transform-origin: bottom left;
+      }
+
+      .shortcut-list {
+        position: absolute;
+        right: 100px;
+        top: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .shortcut-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .shortcut-row .keys {
+        display: flex;
+        gap: 4px;
+      }
+      .shortcut-row .keys kbd {
+        font-size: 18px;
+        padding: 8px 12px;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+      .shortcut-row .label {
+        font-size: 18px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .shortcut-row .sub {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.55);
+        margin-left: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="desktop">      <div class="headline">
+        <h1>Controls,<br />always one tap away.</h1>
+        <p>Persistent controls panel for pause / mute / camera / stop, plus global shortcuts you can hit from inside any app.</p>
+      </div>
+
+      <div class="hero-panel">
+        <div class="controls-panel" style="position: static;">
+          <div class="bar">
+            <div class="brand"><span class="brand-dot"></span>Machole</div>
+            <div class="status">Recording &middot; MP4</div>
+          </div>
+          <div class="body">
+            <div class="timer-row">
+              <span class="rec-dot"></span>
+              <span class="timer">04:17</span>
+            </div>
+            <div class="btn-row">
+              <div class="ctl-btn stop"><span class="ico">&#9632;</span><span class="lbl">Stop</span></div>
+              <div class="ctl-btn"><span class="ico">&#10073;&#10073;</span><span class="lbl">Pause</span></div>
+              <div class="ctl-btn"><span class="ico">&#127908;</span><span class="lbl">Mute</span></div>
+              <div class="ctl-btn"><span class="ico">&#127909;</span><span class="lbl">Camera</span></div>
+            </div>
+          </div>
+          <div class="legend">
+            <span><kbd>&#8984;&#8679;R</kbd> Rec / Stop</span>
+            <span><kbd>&#8984;&#8679;P</kbd> Pause</span>
+            <span><kbd>&#8984;&#8679;M</kbd> Mute</span>
+            <span><kbd>&#8984;&#8679;E</kbd> Camera</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="shortcut-list">
+        <div class="shortcut-row">
+          <div class="keys"><kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>R</kbd></div>
+          <div class="label">Start &amp; stop recording</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="keys"><kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>P</kbd></div>
+          <div class="label">Pause &amp; resume</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="keys"><kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>M</kbd></div>
+          <div class="label">Mute microphone</div>
+        </div>
+        <div class="shortcut-row">
+          <div class="keys"><kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>E</kbd></div>
+          <div class="label">Hide camera</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

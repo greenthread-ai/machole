@@ -1,0 +1,401 @@
+/* Shared styles for all screenshot mocks. Each page is a 1440x900 canvas
+   that resembles a macOS desktop with the real Machole UI composited on
+   top — captured retina with ⌘⇧4 → Space it lands at 2880x1800. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 1440px;
+  height: 900px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* macOS-ish wallpaper. Warm gradient, easy on the eyes, lets the app UI
+   pop. */
+.desktop {
+  width: 1440px;
+  height: 900px;
+  position: relative;
+  background:
+    radial-gradient(ellipse at top left, rgba(174, 137, 230, 0.45), transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(255, 159, 122, 0.4), transparent 55%),
+    linear-gradient(135deg, #1f1c3a 0%, #2c2557 45%, #3d295a 100%);
+  overflow: hidden;
+}
+
+/* Faux macOS menu bar so the screenshot reads as a real desktop. */
+.menubar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background: rgba(20, 18, 32, 0.55);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  gap: 18px;
+}
+
+.menubar .apple {
+  font-size: 14px;
+  margin-right: 2px;
+}
+
+.menubar .right {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Big marketing headline overlayed at the top of the screenshot. */
+.headline {
+  position: absolute;
+  top: 84px;
+  left: 80px;
+  right: 80px;
+  z-index: 10;
+}
+
+.headline h1 {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+}
+
+.headline p {
+  margin-top: 14px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 720px;
+}
+
+/* ─── Camera overlay component ─────────────────────────────────────────── */
+
+.camera-overlay {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.45));
+}
+
+.camera-overlay .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff6b6b,
+    #feca57,
+    #48dbfb,
+    #ff9ff3,
+    #54a0ff,
+    #5f27cd,
+    #ff6b6b
+  );
+}
+
+.camera-overlay.theme-sunset .ring {
+  background: conic-gradient(from 0deg, #ff6b6b, #ff9f43, #feca57, #ff9f43, #ff6b6b);
+}
+.camera-overlay.theme-ocean .ring {
+  background: conic-gradient(from 0deg, #0abde3, #48dbfb, #54a0ff, #48dbfb, #0abde3);
+}
+.camera-overlay.theme-neon .ring {
+  background: conic-gradient(from 0deg, #f368e0, #ff9ff3, #5f27cd, #6c5ce7, #f368e0);
+}
+.camera-overlay.theme-forest .ring {
+  background: conic-gradient(from 0deg, #4ecb8d, #6edba3, #ffffff, #6edba3, #3dab78, #4ecb8d);
+}
+
+.camera-overlay .lens {
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: #0a0a0c;
+  overflow: hidden;
+}
+
+/* Placeholder face used across all screenshots. Swap `face.jpg` for your
+   own photo / an AI-generated face / something with explicit model release
+   before submitting if Unsplash's licensing doesn't sit right for you. */
+.camera-overlay .lens img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-overlay .silhouette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 38%, #4a3f3a 0%, transparent 65%),
+    radial-gradient(ellipse 95% 85% at 50% 130%, #2d2528 0%, transparent 55%),
+    linear-gradient(180deg, #1a1822 0%, #20242c 100%);
+}
+
+/* ─── Controls panel component ─────────────────────────────────────────── */
+
+.controls-panel {
+  position: absolute;
+  width: 380px;
+  background: rgba(20, 20, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.55));
+  color: #f2f2f4;
+}
+
+.controls-panel .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.controls-panel .brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.controls-panel .brand-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: conic-gradient(#ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+}
+
+.controls-panel .status {
+  font-size: 11px;
+  color: #9a9aa2;
+}
+
+.controls-panel .body {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.controls-panel .timer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls-panel .rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.7);
+}
+
+.controls-panel .timer {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.controls-panel .btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.controls-panel .ctl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 70px;
+  padding: 9px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e8e8ea;
+}
+
+.controls-panel .ctl-btn .ico {
+  font-size: 16px;
+}
+
+.controls-panel .ctl-btn .lbl {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.controls-panel .ctl-btn.stop {
+  background: rgba(255, 77, 77, 0.18);
+  border-color: rgba(255, 77, 77, 0.36);
+}
+
+.controls-panel .legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+  padding: 11px 14px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  color: #8a8a92;
+}
+
+.controls-panel .legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  color: #cfcfd6;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+/* ─── Recording border (frame.css equivalent) ──────────────────────────── */
+
+.rec-border {
+  position: absolute;
+  border: 3px solid #ff4d4d;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 22px rgba(255, 77, 77, 0.55),
+    0 0 22px rgba(255, 77, 77, 0.55);
+  pointer-events: none;
+}
+
+.rec-border .badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(18, 18, 22, 0.92);
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.rec-border .badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  box-shadow: 0 0 8px rgba(255, 77, 77, 0.8);
+}
+
+/* ─── Faux app window (used as the "thing being recorded") ─────────────── */
+
+.app-window {
+  position: absolute;
+  background: #161821;
+  border-radius: 11px;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.app-window .titlebar {
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+  background: linear-gradient(180deg, #20232e, #1a1d27);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.app-window .traffic {
+  display: flex;
+  gap: 8px;
+}
+
+.app-window .traffic span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.app-window .traffic span:nth-child(1) {
+  background: #ff5f57;
+}
+.app-window .traffic span:nth-child(2) {
+  background: #febc2e;
+}
+.app-window .traffic span:nth-child(3) {
+  background: #28c840;
+}
+
+.app-window .title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+
+/* Faux code editor content. */
+.codebody {
+  padding: 22px 28px;
+  font-family: 'SF Mono', ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c9d1d9;
+}
+
+.codebody .ln {
+  display: flex;
+  gap: 18px;
+}
+
+.codebody .num {
+  width: 24px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.kw { color: #c678dd; }
+.fn { color: #61afef; }
+.str { color: #98c379; }
+.com { color: rgba(255, 255, 255, 0.35); font-style: italic; }
+.num-l { color: #d19a66; }
+.var { color: #e06c75; }

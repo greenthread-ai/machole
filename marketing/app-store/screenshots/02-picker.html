@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole — Source Picker</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .picker {
+        position: absolute;
+        left: 360px;
+        top: 240px;
+        width: 720px;
+        background: rgba(22, 22, 26, 0.97);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        overflow: hidden;
+        filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.55));
+      }
+      .picker .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .picker h2 {
+        font-size: 17px;
+        font-weight: 700;
+      }
+      .picker .ghost {
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        color: #cfcfd6;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 7px 13px;
+      }
+      .picker .body {
+        padding: 18px 24px 22px;
+      }
+      .area-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        background: linear-gradient(135deg, rgba(72, 219, 251, 0.18), rgba(95, 39, 205, 0.18));
+        border: 1px solid rgba(72, 219, 251, 0.36);
+        border-radius: 12px;
+      }
+      .area-card .icon {
+        width: 38px;
+        height: 28px;
+        border: 2px dashed #48dbfb;
+        border-radius: 5px;
+      }
+      .area-card strong {
+        display: block;
+        font-size: 14px;
+      }
+      .area-card small {
+        font-size: 12px;
+        color: #9a9aa2;
+      }
+      .section h3 {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: #8a8a92;
+        margin-bottom: 10px;
+      }
+      .section {
+        margin-bottom: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .card .thumb {
+        width: 100%;
+        height: 84px;
+        background: linear-gradient(135deg, #2a3142, #1c2030);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .card.screen1 .thumb {
+        background:
+          radial-gradient(ellipse at top left, rgba(255, 159, 122, 0.4), transparent 60%),
+          linear-gradient(135deg, #1f1c3a, #3d295a);
+      }
+      .card.screen2 .thumb {
+        background:
+          radial-gradient(ellipse at bottom right, rgba(78, 203, 141, 0.45), transparent 60%),
+          linear-gradient(135deg, #142028, #1c3a3a);
+      }
+      .card.win1 .thumb {
+        background: linear-gradient(180deg, #20232e, #161821);
+        font-family: 'SF Mono', monospace;
+        color: #98c379;
+      }
+      .card.win2 .thumb {
+        background: linear-gradient(180deg, #ffffff, #e8e8ed);
+        color: #888;
+      }
+      .card.win3 .thumb {
+        background: linear-gradient(135deg, #2d2438, #4a3168);
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .card .meta {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 10px;
+      }
+      .card .ico {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .card .name {
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="desktop">      <div class="headline" style="top: 64px;">
+        <h1>Screen, window,<br />or any area.</h1>
+        <p>Pick what to record from a clean grid — full display, single app window, or drag-select a custom rectangle.</p>
+      </div>
+
+      <div class="picker">
+        <div class="header">
+          <h2>Record your screen</h2>
+          <button class="ghost">Cancel</button>
+        </div>
+        <div class="body">
+          <div class="area-card">
+            <div class="icon"></div>
+            <div>
+              <strong>Select an Area</strong>
+              <small>Drag a custom rectangle to record</small>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Screens</h3>
+            <div class="grid">
+              <div class="card screen1"><div class="thumb">Display 1</div><div class="meta"><div class="ico"></div><div class="name">Display 1 (Built-in)</div></div></div>
+              <div class="card screen2"><div class="thumb">Display 2</div><div class="meta"><div class="ico"></div><div class="name">Display 2 (External)</div></div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Windows</h3>
+            <div class="grid">
+              <div class="card win1"><div class="thumb">&lt;/&gt;</div><div class="meta"><div class="ico"></div><div class="name">VS Code — machole</div></div></div>
+              <div class="card win2"><div class="thumb">Aa</div><div class="meta"><div class="ico"></div><div class="name">Pages — Demo Script</div></div></div>
+              <div class="card win3"><div class="thumb">&#127909;</div><div class="meta"><div class="ico"></div><div class="name">Figma — Hero Mocks</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera overlay still visible (it always is). -->
+      <div class="camera-overlay" style="right: 80px; bottom: 80px; width: 180px; height: 180px;">
+        <div class="ring"></div>
+        <div class="lens"><img src="face.jpg" alt="" /></div>
+      </div>
+    </div>
+  </body>
+</html>

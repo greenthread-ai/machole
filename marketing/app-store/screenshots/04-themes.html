@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole — Themes</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .theme-grid {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 360px;
+        display: flex;
+        justify-content: center;
+        gap: 56px;
+      }
+      .theme-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .theme-cell .camera-overlay {
+        position: static;
+        width: 200px;
+        height: 200px;
+      }
+      .theme-cell .name {
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.78);
+        letter-spacing: 0.4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="desktop">      <div class="headline">
+        <h1>Make it yours.</h1>
+        <p>Five gradient themes for the camera ring, three sizes, pick which webcam to use — all from the right-click menu.</p>
+      </div>
+
+      <div class="theme-grid">
+        <div class="theme-cell">
+          <div class="camera-overlay">
+            <div class="ring"></div>
+            <div class="lens"><img src="face.jpg" alt="" /></div>
+          </div>
+          <div class="name">Rainbow</div>
+        </div>
+        <div class="theme-cell">
+          <div class="camera-overlay theme-sunset">
+            <div class="ring"></div>
+            <div class="lens"><img src="face.jpg" alt="" /></div>
+          </div>
+          <div class="name">Sunset</div>
+        </div>
+        <div class="theme-cell">
+          <div class="camera-overlay theme-ocean">
+            <div class="ring"></div>
+            <div class="lens"><img src="face.jpg" alt="" /></div>
+          </div>
+          <div class="name">Ocean</div>
+        </div>
+        <div class="theme-cell">
+          <div class="camera-overlay theme-neon">
+            <div class="ring"></div>
+            <div class="lens"><img src="face.jpg" alt="" /></div>
+          </div>
+          <div class="name">Neon</div>
+        </div>
+        <div class="theme-cell">
+          <div class="camera-overlay theme-forest">
+            <div class="ring"></div>
+            <div class="lens"><img src="face.jpg" alt="" /></div>
+          </div>
+          <div class="name">Forest</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
