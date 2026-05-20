@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Machole — Hero</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="desktop">
+      <div class="menubar">
+        <span class="apple">&#63743;</span>
+        <span>Machole</span>
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span>Window</span>
+        <span>Help</span>
+        <span class="right">
+          <span>&#127916;</span>
+          <span>&#127908;</span>
+          <span>&#128276;</span>
+          <span>Mon 9:24 AM</span>
+        </span>
+      </div>
+
+      <div class="headline">
+        <h1>Your face.<br />In every recording.</h1>
+        <p>macOS screen recorder with an always-on camera overlay — screen, mic, and system audio together.</p>
+      </div>
+
+      <!-- "Thing being recorded" — faux VS Code window. -->
+      <div class="app-window" style="left: 140px; top: 360px; width: 880px; height: 480px;">
+        <div class="titlebar">
+          <div class="traffic"><span></span><span></span><span></span></div>
+          <div class="title">renderer.ts — machole</div>
+        </div>
+        <div class="codebody">
+          <div class="ln"><span class="num">42</span><span><span class="kw">async function</span> <span class="fn">init</span>() {</span></div>
+          <div class="ln"><span class="num">43</span><span>&nbsp;&nbsp;<span class="kw">const</span> stream = <span class="kw">await</span> navigator.mediaDevices.<span class="fn">getDisplayMedia</span>({</span></div>
+          <div class="ln"><span class="num">44</span><span>&nbsp;&nbsp;&nbsp;&nbsp;video: { frameRate: { max: <span class="num-l">30</span> } },</span></div>
+          <div class="ln"><span class="num">45</span><span>&nbsp;&nbsp;&nbsp;&nbsp;audio: <span class="kw">true</span>,</span></div>
+          <div class="ln"><span class="num">46</span><span>&nbsp;&nbsp;});</span></div>
+          <div class="ln"><span class="num">47</span><span>&nbsp;&nbsp;<span class="kw">const</span> recorder = <span class="kw">new</span> <span class="fn">MediaRecorder</span>(stream, {</span></div>
+          <div class="ln"><span class="num">48</span><span>&nbsp;&nbsp;&nbsp;&nbsp;mimeType: <span class="str">'video/mp4;codecs=h264,mp4a.40.2'</span>,</span></div>
+          <div class="ln"><span class="num">49</span><span>&nbsp;&nbsp;});</span></div>
+          <div class="ln"><span class="num">50</span><span>&nbsp;&nbsp;recorder.<span class="fn">start</span>(<span class="num-l">1000</span>);&nbsp;<span class="com">// emit a chunk every second</span></span></div>
+          <div class="ln"><span class="num">51</span><span>}</span></div>
+        </div>
+      </div>
+
+      <!-- Recording border around the editor. -->
+      <div class="rec-border" style="left: 120px; top: 340px; width: 920px; height: 520px;">
+        <div class="badge"><span class="badge-dot"></span>REC</div>
+      </div>
+
+      <!-- Controls panel bottom-left. -->
+      <div class="controls-panel" style="left: 40px; bottom: 40px;">
+        <div class="bar">
+          <div class="brand"><span class="brand-dot"></span>Machole</div>
+          <div class="status">Recording &middot; MP4</div>
+        </div>
+        <div class="body">
+          <div class="timer-row">
+            <span class="rec-dot"></span>
+            <span class="timer">01:42</span>
+          </div>
+          <div class="btn-row">
+            <div class="ctl-btn stop"><span class="ico">&#9632;</span><span class="lbl">Stop</span></div>
+            <div class="ctl-btn"><span class="ico">&#10073;&#10073;</span><span class="lbl">Pause</span></div>
+            <div class="ctl-btn"><span class="ico">&#127908;</span><span class="lbl">Mute</span></div>
+            <div class="ctl-btn"><span class="ico">&#127909;</span><span class="lbl">Camera</span></div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><kbd>&#8984;&#8679;R</kbd> Rec / Stop</span>
+          <span><kbd>&#8984;&#8679;P</kbd> Pause</span>
+          <span><kbd>&#8984;&#8679;M</kbd> Mute</span>
+          <span><kbd>&#8984;&#8679;E</kbd> Camera</span>
+        </div>
+      </div>
+
+      <!-- Camera overlay bottom-right. -->
+      <div class="camera-overlay" style="right: 60px; bottom: 60px;">
+        <div class="ring"></div>
+        <div class="lens">
+          <div class="silhouette"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

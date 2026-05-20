@@ -47,6 +47,10 @@ const config: ForgeConfig = {
         'Machole displays your camera feed in the on-screen overlay.',
       NSMicrophoneUsageDescription:
         'Machole records your microphone and drives the audio pulse animation.',
+      // Pre-answer App Store Connect's encryption questionnaire. Machole uses
+      // only standard encryption included in macOS (HTTPS / TLS), which is
+      // exempt under U.S. EAR Category 5, Part 2 §740.17(b)(1).
+      ITSAppUsesNonExemptEncryption: false,
     },
     osxSign: isMas
       ? {
