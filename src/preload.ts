@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld('machole', {
   onRequestCameraList: (callback: () => void) => {
     ipcRenderer.on('request-camera-list', () => callback());
   },
+  onRecordingState: (callback: (active: boolean) => void) => {
+    ipcRenderer.on('recording-state', (_event, active: boolean) => callback(active));
+  },
 });

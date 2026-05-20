@@ -35,7 +35,13 @@ declare global {
       onSetSize: (callback: (size: number) => void) => void;
       onSetCamera: (callback: (deviceId: string) => void) => void;
       onRequestCameraList: (callback: () => void) => void;
+      onRecordingState: (callback: (active: boolean) => void) => void;
     };
+  }
+  // `requestVideoFrameCallback` ships in current Chromium but isn't in the
+  // older lib.dom.d.ts this project's TypeScript version uses.
+  interface HTMLVideoElement {
+    requestVideoFrameCallback(callback: (now: DOMHighResTimeStamp) => void): number;
   }
 }
 
@@ -43,11 +49,17 @@ let blurEnabled = true;
 let autoframeEnabled = true;
 let closeupEnabled = false;
 let pulseEnabled = true;
+// Set by `recording-main` while a recording is live. The render loop uses
+// this to halve its MediaPipe inference rate so it doesn't starve the screen
+// capture pipeline of GPU cycles. Viewers can't perceive the difference —
+// the screen recorder is capturing the bubble at its own framerate anyway.
+let recordingActive = false;
 
 window.machole.onToggleBlur((enabled) => { blurEnabled = enabled; });
 window.machole.onToggleAutoframe((enabled) => { autoframeEnabled = enabled; });
 window.machole.onToggleCloseup((enabled) => { closeupEnabled = enabled; });
 window.machole.onTogglePulse((enabled) => { pulseEnabled = enabled; });
+window.machole.onRecordingState((active) => { recordingActive = active; });
 
 const overlay = document.querySelector('.overlay') as HTMLElement;
 
@@ -383,7 +395,7 @@ async function init() {
     const vw = video.videoWidth;
     const vh = video.videoHeight;
     if (vw === 0 || vh === 0 || video.readyState < 2) {
-      requestAnimationFrame(renderFrame);
+      // No frame yet — onVideoFrame will retry on the next rVFC tick.
       return;
     }
     if (offscreen.width !== vw || offscreen.height !== vh) {
@@ -472,10 +484,28 @@ async function init() {
       ctx.drawImage(offscreen, srcX, srcY, squareSize, squareSize, 0, 0, squareSize, squareSize);
     }
 
-    requestAnimationFrame(renderFrame);
   }
 
-  renderFrame();
+  // Drive the render loop off actual camera frames via `requestVideoFrameCallback`
+  // rather than the display refresh rate. rVFC fires once per delivered camera
+  // frame, so the heavy MediaPipe inferences run ~30/sec instead of 60–120/sec
+  // — matching the camera's real framerate, not the monitor's.
+  let frameCount = 0;
+  function onVideoFrame() {
+    frameCount += 1;
+    // While recording, process every other frame (~15 fps). The screen
+    // recorder captures the bubble at its own framerate, so viewers can't
+    // perceive a faster cadence anyway — but at full rate the ML inferences
+    // contend with the screen capture pipeline and the encoder drops frames.
+    if (recordingActive && frameCount % 2 === 1) {
+      video.requestVideoFrameCallback(onVideoFrame);
+      return;
+    }
+    void renderFrame().finally(() => {
+      video.requestVideoFrameCallback(onVideoFrame);
+    });
+  }
+  video.requestVideoFrameCallback(onVideoFrame);
 }
 
 init().catch((err) => {

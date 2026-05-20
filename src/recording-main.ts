@@ -326,7 +326,9 @@ function tearDownRecording(): void {
   pendingFrame = null;
   closeFrame();
   unregisterRecordingShortcuts();
-  getCameraWindow()?.show();
+  const cam = getCameraWindow();
+  cam?.webContents.send('recording-state', false);
+  cam?.show();
 }
 
 function timestamp(): string {
@@ -430,6 +432,10 @@ function registerIpc(): void {
     countdownWindow = null;
     if (!pendingBegin) return;
     recordingActive = true;
+    // Nudge the camera overlay to throttle its MediaPipe inferences while
+    // recording — its GPU work otherwise contends with the screen capture
+    // pipeline and the encoder drops frames upstream of encoding.
+    getCameraWindow()?.webContents.send('recording-state', true);
     registerRecordingShortcuts();
     sendToControls('rec:begin', pendingBegin);
     openFrame();
