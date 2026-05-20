@@ -139,8 +139,17 @@ body {
   overflow: hidden;
 }
 
-/* Generic silhouette as the camera content — agnostic and doesn't need a
-   real webcam frame. */
+/* Placeholder face used across all screenshots. Swap `face.jpg` for your
+   own photo / an AI-generated face / something with explicit model release
+   before submitting if Unsplash's licensing doesn't sit right for you. */
+.camera-overlay .lens img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .camera-overlay .silhouette {
   position: absolute;
   inset: 0;

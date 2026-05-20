@@ -26,7 +26,20 @@ npx -y playwright codegen file://"$(pwd)/01-hero.html" --viewport-size 1440,900
 
 | File | Story |
 |---|---|
-| `01-hero.html` | Recording-in-progress hero: code editor with red recording border, controls panel timer, camera overlay floating. The "what is this app" shot. |
+| `01-hero.html` | Recording-in-progress hero: editor under a red recording border with the camera overlay composited inside. The "what is this app" shot. |
 | `02-picker.html` | The source picker centered on screen — communicates **screen / window / area** choice. |
 | `03-controls.html` | Controls panel + keyboard shortcuts callout — "always one tap away." |
-| `04-themes.html` | Four camera overlays in different gradient themes — "make it yours." |
+| `04-themes.html` | All five gradient ring themes side by side. |
+
+## The face
+
+`face.jpg` is the portrait shared by every screenshot. It's
+**AI-generated** (Google AI Studio), so no model-release concerns apply.
+
+To swap it for a different face, just drop a 600×600-ish JPEG over
+`face.jpg` — every screenshot points at the same filename. To compress and
+square-crop a larger source from the macOS command line:
+
+```bash
+sips -Z 600 -s format jpeg source.png --out face.jpg
+```
