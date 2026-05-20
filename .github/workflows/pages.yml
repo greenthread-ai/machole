@@ -1,0 +1,58 @@
+name: Pages
+
+# Deploys the static marketing site under `site/` to GitHub Pages.
+#
+# Triggers:
+#  - any push to main that touches site/ or this workflow (so iterating on
+#    the site doesn't need a release)
+#  - the same release: published event that builds .dmg / App Store .pkg,
+#    so each release also republishes the site
+#  - manual dispatch
+#
+# One-time setup required after this lands on main:
+#   Repo settings → Pages → Source = "GitHub Actions"
+#   (actions/configure-pages will succeed once the Source is set.)
+#
+# Site lands at https://greenthread-ai.github.io/machole/
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deploy; don't cancel an in-progress one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -44,4 +44,4 @@ If a future version of Machole begins collecting any data, this policy will be u
 
 For privacy questions, contact:
 
-- nick@npratley.net
+- hello@theitdept.au
