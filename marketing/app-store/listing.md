@@ -37,7 +37,7 @@ Answer "None" / "No" to every item. Machole contains no objectionable content, m
 
 | Field | Value |
 |---|---|
-| Privacy Policy URL | `[TBD — host privacy-policy.md somewhere public]` |
+| Privacy Policy URL | `https://greenthread-ai.github.io/machole/privacy.html` |
 | Data collection | None |
 | Tracking | No |
 
@@ -167,13 +167,13 @@ First public release of Machole.
 ### Support URL
 
 ```
-[TBD — e.g. https://github.com/greenthread-ai/machole/issues or a company support page]
+https://greenthread-ai.github.io/machole/support.html
 ```
 
 ### Marketing URL (optional)
 
 ```
-[TBD]
+https://greenthread-ai.github.io/machole/
 ```
 
 ### Copyright
@@ -193,7 +193,7 @@ First public release of Machole.
 | First Name | Nick |
 | Last Name | Pratley |
 | Phone | `[TBD]` |
-| Email | nick@npratley.net |
+| Email | hello@theitdept.au |
 
 ### Sign-In Required
 
