@@ -112,13 +112,21 @@ a {
   text-align: center;
 }
 
+/* Animate the conic-gradient's start angle (not the element transform), so
+   the ring spins while the face inside stays still. */
+@property --ring-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
 .hero-mark {
   width: 160px;
   height: 160px;
   margin: 0 auto 32px;
   border-radius: 50%;
   background: conic-gradient(
-    from 0deg,
+    from var(--ring-angle, 0deg),
     #ff6b6b,
     #feca57,
     #48dbfb,
@@ -127,17 +135,52 @@ a {
     #5f27cd,
     #ff6b6b
   );
-  animation: spin 4s linear infinite;
+  animation: ring-spin 4s linear infinite;
   position: relative;
   filter: drop-shadow(0 20px 50px rgba(95, 39, 205, 0.45));
 }
 
-.hero-mark::after {
-  content: '';
+@keyframes ring-spin {
+  from { --ring-angle: 0deg; }
+  to { --ring-angle: 360deg; }
+}
+
+.hero-face {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  object-fit: cover;
   background: #06050d;
+}
+
+/* Audio-reactive-style bars around the ring. Bars are generated and
+   randomised in JS (index.html); CSS just defines their look + animation. */
+.hero-mark .pulse {
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+}
+
+.hero-mark .pulse .bar {
+  position: absolute;
+  left: calc(50% - 1.5px);
+  bottom: 50%;
+  width: 3px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--color, #48dbfb);
+  box-shadow: 0 0 6px var(--color, #48dbfb);
+  opacity: 0.4;
+  transform-origin: 50% 100%;
+  transform: rotate(var(--bar-angle, 0deg)) translateY(-84px);
+  animation: bar-pulse var(--duration, 1.4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes bar-pulse {
+  0%, 100% { height: 4px; opacity: 0.25; }
+  50% { height: var(--max-len, 20px); opacity: 0.9; }
 }
 
 .hero h1 {
