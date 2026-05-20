@@ -47,6 +47,15 @@ function teardownIpc(): void {
 /** Run `startApp` once camera, microphone, and screen access are all in
  *  place — immediately if already granted, otherwise after onboarding. */
 export function ensurePermissions(startApp: () => void): void {
+  // Unsigned local builds skip the onboarding entirely. TCC for unsigned
+  // apps is flaky across `npm run build` (binary identity changes), and
+  // dev iteration doesn't benefit from being gated — the OS still prompts
+  // on the actual getUserMedia / getSources call.
+  if (!MACHOLE_SIGNED) {
+    startApp();
+    return;
+  }
+
   screenGrantedAtBoot = status('screen') === 'granted';
 
   if (

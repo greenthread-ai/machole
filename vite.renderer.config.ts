@@ -64,6 +64,19 @@ function mediapipeAssets(): Plugin {
 // process can `loadFile` them individually in production.
 export default defineConfig({
   plugins: [mediapipeAssets()],
+  resolve: {
+    // body-segmentation / face-detection themselves do
+    // `import { SelfieSegmentation } from '@mediapipe/selfie_segmentation'`.
+    // The MediaPipe package only registers that constructor on `window` when
+    // its file runs as a <script> tag (see mediapipeAssets() above) — when
+    // Rollup bundles it as ESM the named export is undefined. Redirect those
+    // imports to thin shims that defer to `window.SelfieSegmentation` /
+    // `window.FaceDetection` at construct time.
+    alias: {
+      '@mediapipe/selfie_segmentation': resolve(__dirname, 'src/shims/selfie_segmentation.ts'),
+      '@mediapipe/face_detection': resolve(__dirname, 'src/shims/face_detection.ts'),
+    },
+  },
   build: {
     rollupOptions: {
       input: {
