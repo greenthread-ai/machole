@@ -51,7 +51,14 @@ const config: ForgeConfig = {
       // only standard encryption included in macOS (HTTPS / TLS), which is
       // exempt under U.S. EAR Category 5, Part 2 §740.17(b)(1).
       ITSAppUsesNonExemptEncryption: false,
+      // Run as a menu bar (agent) app: no Dock icon, lives in the menu bar
+      // extra. Machole's standard macOS presence is the Tray created in
+      // main.ts — required for App Store Guideline 4.
+      LSUIElement: true,
     },
+    // The menu bar template icon is loaded at runtime via process.resourcesPath
+    // (see main.ts); ship both the 1x and @2x variants.
+    extraResource: ['build/trayTemplate.png', 'build/trayTemplate@2x.png'],
     osxSign: isMas
       ? {
           identity: masIdentity,

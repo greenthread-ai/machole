@@ -146,6 +146,43 @@ function render(size) {
   return rgba;
 }
 
+// --- menu bar template icon -------------------------------------------------
+
+// macOS menu bar (status item) glyphs are "template images": only the alpha
+// channel matters — the OS recolours the shape for light/dark menu bars. We
+// render Machole's ring-with-a-hole as a solid black donut so it reads as the
+// brand mark at 16pt.
+function renderTemplate(size) {
+  const SS = 4;
+  const rgba = Buffer.alloc(size * size * 4);
+  const c = size / 2;
+  const pad = size * 0.085;
+  const hw = size / 2 - pad;
+  const outerR = hw * 0.9; // ring outer radius
+  const holeR = outerR * 0.55; // transparent centre radius
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let pa = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          const px = x + (sx + 0.5) / SS;
+          const py = y + (sy + 0.5) / SS;
+          const d = Math.hypot(px - c, py - c);
+          if (d <= outerR && d > holeR) pa += 255;
+        }
+      }
+      const idx = (y * size + x) * 4;
+      // Solid black; alpha defines the visible shape.
+      rgba[idx] = 0;
+      rgba[idx + 1] = 0;
+      rgba[idx + 2] = 0;
+      rgba[idx + 3] = Math.round(pa / (SS * SS));
+    }
+  }
+  return rgba;
+}
+
 // --- assemble ---------------------------------------------------------------
 
 const SIZES = [16, 32, 64, 128, 256, 512, 1024];
@@ -176,4 +213,9 @@ fs.writeFileSync(path.join(buildDir, 'icon.png'), pngs.get(1024));
 execFileSync('iconutil', ['-c', 'icns', iconset, '-o', path.join(buildDir, 'icon.icns')]);
 fs.rmSync(iconset, { recursive: true, force: true });
 
-console.log('Wrote build/icon.icns and build/icon.png');
+// Menu bar template icon (16pt, plus @2x). nativeImage loads the @2x variant
+// automatically when both sit beside each other.
+fs.writeFileSync(path.join(buildDir, 'trayTemplate.png'), encodePNG(16, renderTemplate(16)));
+fs.writeFileSync(path.join(buildDir, 'trayTemplate@2x.png'), encodePNG(32, renderTemplate(32)));
+
+console.log('Wrote build/icon.icns, build/icon.png, and build/trayTemplate*.png');

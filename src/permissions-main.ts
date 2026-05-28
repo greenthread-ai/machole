@@ -91,33 +91,30 @@ export function ensurePermissions(startApp: () => void): void {
     screenGrantedAtBoot,
   }));
 
-  // Camera/microphone can be requested in-process; screen recording cannot.
+  // Trigger the OS's own permission prompt. Camera/microphone use the
+  // in-process askForMediaAccess dialog; screen recording has no such API, so
+  // attempting a capture makes macOS raise its own "record this screen"
+  // dialog. In every case the system prompt — not a Settings redirect — is
+  // what the user sees first (App Store Guideline 5.1.1(iv)).
   ipcMain.handle('perm:request', async (_e, type: MediaType) => {
-    if (type === 'camera' || type === 'microphone') {
-      try {
+    try {
+      if (type === 'camera' || type === 'microphone') {
         await systemPreferences.askForMediaAccess(type);
-      } catch {
-        // The returned status reflects the outcome either way.
-      }
-    }
-    return status(type);
-  });
-
-  ipcMain.on('perm:open-settings', async (_e, type: MediaType) => {
-    if (type === 'screen') {
-      // macOS only adds an app to the Screen Recording list once it has
-      // attempted to capture. Triggering this here puts Machole into the
-      // list with the toggle off, so the user just flips the switch
-      // instead of "+ Add"-browsing to find the app.
-      try {
+      } else if (type === 'screen') {
         await desktopCapturer.getSources({
           types: ['screen'],
           thumbnailSize: { width: 1, height: 1 },
         });
-      } catch {
-        // Best effort — open the panel regardless.
       }
+    } catch {
+      // The returned status reflects the outcome either way.
     }
+    return status(type);
+  });
+
+  // Fallback only — used once a permission has been explicitly denied, where
+  // the OS will no longer re-prompt and the user must toggle it in Settings.
+  ipcMain.on('perm:open-settings', (_e, type: MediaType) => {
     shell.openExternal(`x-apple.systempreferences:com.apple.preference.security?${PANE[type]}`);
   });
 

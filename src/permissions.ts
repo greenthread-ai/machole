@@ -41,9 +41,11 @@ function render(state: PermState): void {
       btn.style.display = 'none';
     } else {
       btn.style.display = '';
-      // Camera/mic can show the native prompt only while "not set".
-      btn.textContent =
-        type !== 'screen' && value === 'not-determined' ? 'Allow' : 'Open Settings';
+      // While "not set", the button triggers the OS's own permission prompt.
+      // Once explicitly denied, the OS won't re-prompt, so we fall back to a
+      // Settings link. The button never says "Allow" — that word is reserved
+      // for the system dialog (App Store Guideline 5.1.1(iv)).
+      btn.textContent = value === 'not-determined' ? 'Continue' : 'Open Settings';
     }
   }
 
@@ -81,9 +83,12 @@ document.querySelectorAll('.perm-btn').forEach((btn) => {
     const row = (btn as HTMLElement).closest('.perm') as HTMLElement;
     const type = row.dataset.type as MediaType;
     const value = current ? current[type] : 'not-determined';
-    if (type !== 'screen' && value === 'not-determined') {
+    if (value === 'not-determined') {
+      // Fire the OS's own prompt (camera/mic dialog, or the screen-recording
+      // dialog via a capture attempt in the main process).
       await window.bridge.invoke('perm:request', type);
     } else {
+      // Already denied — the OS won't prompt again; send the user to Settings.
       window.bridge.send('perm:open-settings', type);
     }
     refresh();

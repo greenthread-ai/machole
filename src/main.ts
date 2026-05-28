@@ -1,8 +1,22 @@
-import { app, BrowserWindow, ipcMain, Menu, screen } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  nativeImage,
+  screen,
+  Tray,
+} from 'electron';
+import type { MenuItemConstructorOptions } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
-import { initRecording } from './recording-main';
+import {
+  initRecording,
+  isRecordingActive,
+  setRecordingStateListener,
+  toggleRecording,
+} from './recording-main';
 import { ensurePermissions } from './permissions-main';
 
 if (started) {
@@ -133,6 +147,10 @@ let cameraDevices: { id: string; label: string }[] = [];
 // the "camera on/off" control can hide/show the face during a recording.
 let cameraWindow: BrowserWindow | null = null;
 
+// Menu bar extra. Machole runs as an agent app (no Dock icon), so the Tray is
+// its required standard macOS presence (App Store Guideline 4).
+let tray: Tray | null = null;
+
 const themes: Record<string, string[]> = {
   Rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6b6b'],
   Sunset: ['#ff6b6b', '#ff9f43', '#feca57', '#ff9f43', '#ff6b6b'],
@@ -140,6 +158,111 @@ const themes: Record<string, string[]> = {
   Neon: ['#f368e0', '#ff9ff3', '#5f27cd', '#6c5ce7', '#f368e0'],
   Forest: ['#4ecb8d', '#6edba3', '#ffffff', '#6edba3', '#3dab78', '#4ecb8d'],
 };
+
+// Menu of camera-overlay settings, shared by the overlay's right-click context
+// menu and the menu bar extra (Tray). Reads the live state each time it is
+// built and dispatches to the camera window via IPC.
+function buildOverlayMenuItems(): MenuItemConstructorOptions[] {
+  const send = (channel: string, payload?: unknown) =>
+    cameraWindow?.webContents.send(channel, payload);
+
+  return [
+    {
+      label: 'Background Blur',
+      type: 'checkbox',
+      checked: blurEnabled,
+      click: () => {
+        blurEnabled = !blurEnabled;
+        send('toggle-blur', blurEnabled);
+        saveSettings();
+      },
+    },
+    {
+      label: 'Auto-Frame',
+      type: 'checkbox',
+      checked: autoframeEnabled,
+      click: () => {
+        autoframeEnabled = !autoframeEnabled;
+        send('toggle-autoframe', autoframeEnabled);
+        saveSettings();
+      },
+    },
+    {
+      label: 'Close-Up',
+      type: 'checkbox',
+      checked: closeupEnabled,
+      click: () => {
+        closeupEnabled = !closeupEnabled;
+        send('toggle-closeup', closeupEnabled);
+        saveSettings();
+      },
+    },
+    {
+      label: 'Audio Pulse',
+      type: 'checkbox',
+      checked: pulseEnabled,
+      click: () => {
+        pulseEnabled = !pulseEnabled;
+        send('toggle-pulse', pulseEnabled);
+        saveSettings();
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Theme',
+      submenu: Object.keys(themes).map((name) => ({
+        label: name,
+        type: 'radio' as const,
+        checked: currentTheme === name,
+        click: () => {
+          currentTheme = name;
+          send('set-theme', themes[name]);
+          saveSettings();
+        },
+      })),
+    },
+    {
+      label: 'Size',
+      submenu: [
+        { label: 'Small', value: 150 },
+        { label: 'Medium', value: 200 },
+        { label: 'Large', value: 300 },
+      ].map(({ label, value }) => ({
+        label,
+        type: 'radio' as const,
+        checked: currentSize === value,
+        click: () => {
+          currentSize = value;
+          cameraWindow?.setSize(value + PULSE_BUFFER, value + PULSE_BUFFER);
+          send('set-size', value);
+          saveSettings();
+        },
+      })),
+    },
+    {
+      label: 'Camera',
+      submenu: [
+        {
+          label: 'Refresh Cameras',
+          click: () => send('request-camera-list'),
+        },
+        { type: 'separator' as const },
+        ...(cameraDevices.length > 0
+          ? cameraDevices.map(({ id, label }) => ({
+              label,
+              type: 'radio' as const,
+              checked: currentCamera ? currentCamera === id : cameraDevices[0]?.id === id,
+              click: () => {
+                currentCamera = id;
+                send('set-camera', id);
+                saveSettings();
+              },
+            }))
+          : [{ label: 'No cameras detected yet', enabled: false }]),
+      ],
+    },
+  ];
+}
 
 const createWindow = () => {
   const winSize = currentSize + PULSE_BUFFER;
@@ -208,109 +331,9 @@ const createWindow = () => {
 
   mainWindow.webContents.on('context-menu', () => {
     const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'Background Blur',
-        type: 'checkbox',
-        checked: blurEnabled,
-        click: () => {
-          blurEnabled = !blurEnabled;
-          mainWindow.webContents.send('toggle-blur', blurEnabled);
-          saveSettings();
-        },
-      },
-      {
-        label: 'Auto-Frame',
-        type: 'checkbox',
-        checked: autoframeEnabled,
-        click: () => {
-          autoframeEnabled = !autoframeEnabled;
-          mainWindow.webContents.send('toggle-autoframe', autoframeEnabled);
-          saveSettings();
-        },
-      },
-      {
-        label: 'Close-Up',
-        type: 'checkbox',
-        checked: closeupEnabled,
-        click: () => {
-          closeupEnabled = !closeupEnabled;
-          mainWindow.webContents.send('toggle-closeup', closeupEnabled);
-          saveSettings();
-        },
-      },
-      {
-        label: 'Audio Pulse',
-        type: 'checkbox',
-        checked: pulseEnabled,
-        click: () => {
-          pulseEnabled = !pulseEnabled;
-          mainWindow.webContents.send('toggle-pulse', pulseEnabled);
-          saveSettings();
-        },
-      },
+      ...buildOverlayMenuItems(),
       { type: 'separator' },
-      {
-        label: 'Theme',
-        submenu: Object.keys(themes).map((name) => ({
-          label: name,
-          type: 'radio' as const,
-          checked: currentTheme === name,
-          click: () => {
-            currentTheme = name;
-            mainWindow.webContents.send('set-theme', themes[name]);
-            saveSettings();
-          },
-        })),
-      },
-      {
-        label: 'Size',
-        submenu: [
-          { label: 'Small', value: 150 },
-          { label: 'Medium', value: 200 },
-          { label: 'Large', value: 300 },
-        ].map(({ label, value }) => ({
-          label,
-          type: 'radio' as const,
-          checked: currentSize === value,
-          click: () => {
-            currentSize = value;
-            mainWindow.setSize(value + PULSE_BUFFER, value + PULSE_BUFFER);
-            mainWindow.webContents.send('set-size', value);
-            saveSettings();
-          },
-        })),
-      },
-      {
-        label: 'Camera',
-        submenu: [
-          {
-            label: 'Refresh Cameras',
-            click: () => {
-              mainWindow.webContents.send('request-camera-list');
-            },
-          },
-          { type: 'separator' },
-          ...(cameraDevices.length > 0
-            ? cameraDevices.map(({ id, label }) => ({
-                label,
-                type: 'radio' as const,
-                checked: currentCamera ? currentCamera === id : cameraDevices[0]?.id === id,
-                click: () => {
-                  currentCamera = id;
-                  mainWindow.webContents.send('set-camera', id);
-                  saveSettings();
-                },
-              }))
-            : [
-                {
-                  label: 'No cameras detected yet',
-                  enabled: false,
-                },
-              ]),
-        ],
-      },
-      { type: 'separator' },
-      { label: 'Exit', click: () => app.quit() },
+      { label: 'Quit Machole', click: () => app.quit() },
     ]);
     contextMenu.popup({ window: mainWindow });
   });
@@ -318,6 +341,8 @@ const createWindow = () => {
   // Receive camera list from renderer
 ipcMain.on('camera-list', (_event, devices: { id: string; label: string }[]) => {
   cameraDevices = devices;
+  // Keep the menu bar extra's Camera submenu in sync as devices appear.
+  rebuildTrayMenu();
 });
 
 ipcMain.on('active-camera', (_event, deviceId: string) => {
@@ -350,6 +375,53 @@ ipcMain.on('quit-app', () => {
   app.quit();
 });
 
+// --- Menu bar extra ---------------------------------------------------------
+
+/** Locate the menu bar template icon across dev and packaged layouts. */
+function trayIconPath(): string | null {
+  const candidates = [
+    // Packaged: copied to Contents/Resources via forge `extraResource`.
+    path.join(process.resourcesPath, 'trayTemplate.png'),
+    // Dev (`.vite/build/main.js`) -> repo build/ dir.
+    path.join(__dirname, '../../build/trayTemplate.png'),
+    path.join(app.getAppPath(), 'build/trayTemplate.png'),
+  ];
+  return candidates.find((p) => fs.existsSync(p)) ?? null;
+}
+
+/** (Re)build the tray's context menu, reflecting the live recording state. */
+function rebuildTrayMenu(): void {
+  if (!tray) return;
+  const recording = isRecordingActive();
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: recording ? 'Stop Recording' : 'Record…',
+        click: () => toggleRecording(),
+      },
+      { type: 'separator' },
+      ...buildOverlayMenuItems(),
+      { type: 'separator' },
+      { label: 'Quit Machole', click: () => app.quit() },
+    ]),
+  );
+}
+
+function createTray(): void {
+  if (tray) return;
+  const iconPath = trayIconPath();
+  const image = iconPath
+    ? nativeImage.createFromPath(iconPath)
+    : nativeImage.createEmpty();
+  // Template image: the OS recolours it for the light/dark menu bar.
+  image.setTemplateImage(true);
+  tray = new Tray(image);
+  tray.setToolTip('Machole');
+  rebuildTrayMenu();
+  // Recording start/stop relabels the Record/Stop item.
+  setRecordingStateListener(() => rebuildTrayMenu());
+}
+
 app.on('ready', () => {
   if (app.dock) {
     app.dock.hide();
@@ -375,6 +447,7 @@ app.on('ready', () => {
   ensurePermissions(() => {
     createWindow();
     initRecording(() => cameraWindow);
+    createTray();
   });
 });
 

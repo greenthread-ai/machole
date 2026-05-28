@@ -31,6 +31,10 @@ let compressingWindow: BrowserWindow | null = null;
 
 let getCameraWindow: () => BrowserWindow | null = () => null;
 
+// Notified whenever a recording starts or stops, so the menu bar extra can
+// relabel its Record/Stop item.
+let onRecordingStateChange: ((active: boolean) => void) | null = null;
+
 // The desktopCapturer source the displayMedia request handler should grant.
 let pendingSourceId: string | null = null;
 // Config carried from source selection through the countdown to "begin".
@@ -321,6 +325,7 @@ function beginSession(
 
 function tearDownRecording(): void {
   recordingActive = false;
+  onRecordingStateChange?.(false);
   pendingSourceId = null;
   pendingBegin = null;
   pendingFrame = null;
@@ -432,6 +437,7 @@ function registerIpc(): void {
     countdownWindow = null;
     if (!pendingBegin) return;
     recordingActive = true;
+    onRecordingStateChange?.(true);
     // Nudge the camera overlay to throttle its MediaPipe inferences while
     // recording — its GPU work otherwise contends with the screen capture
     // pipeline and the encoder drops frames upstream of encoding.
@@ -523,6 +529,23 @@ function registerIpc(): void {
     if (visible) cam.show();
     else cam.hide();
   });
+}
+
+/** Whether a recording is currently in progress. */
+export function isRecordingActive(): boolean {
+  return recordingActive;
+}
+
+/** Menu bar "Record / Stop": stop if recording, otherwise open the picker —
+ *  mirrors the Cmd+Shift+R global shortcut. */
+export function toggleRecording(): void {
+  if (recordingActive) sendToControls('shortcut', 'stop' as ShortcutAction);
+  else if (!isBusy()) openPicker();
+}
+
+/** Register a callback fired when recording starts/stops (for the tray). */
+export function setRecordingStateListener(cb: (active: boolean) => void): void {
+  onRecordingStateChange = cb;
 }
 
 /** Public entry point, called from main.ts once the app is ready. */
