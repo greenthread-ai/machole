@@ -1,6 +1,6 @@
-# Releasing Machole
+# Releasing ScreenHole
 
-Machole is built and released by the [`release.yml`](../.github/workflows/release.yml)
+ScreenHole is built and released by the [`release.yml`](../.github/workflows/release.yml)
 GitHub Action. When you **publish a GitHub Release**, the Action builds a
 universal (Apple Silicon + Intel) macOS app, signs it with your Apple
 **Developer ID** certificate, notarizes it with Apple, and attaches the `.dmg`
@@ -92,8 +92,8 @@ base64 -i AuthKey_XXXXXXXXXX.p8 | pbcopy   # paste into APPLE_API_KEY_P8
 Verify a downloaded build:
 
 ```bash
-spctl --assess --type open --context context:primary-signature -vvv Machole.dmg
-codesign --verify --deep --strict --verbose=2 /Applications/machole.app
+spctl --assess --type open --context context:primary-signature -vvv ScreenHole.dmg
+codesign --verify --deep --strict --verbose=2 /Applications/ScreenHole.app
 ```
 
 ---
@@ -105,7 +105,7 @@ codesign --verify --deep --strict --verbose=2 /Applications/machole.app
   hardened-runtime flag or an unsigned nested binary.
 - **`errSecInternalComponent` during signing** — the keychain partition list
   step failed; re-check `MACOS_CERT_PASSWORD`.
-- **Universal build + asar integrity** — Machole ships with the
+- **Universal build + asar integrity** — ScreenHole ships with the
   `EnableEmbeddedAsarIntegrityValidation` fuse on. If a universal build ever
   fails to launch with an integrity error, that fuse is the first thing to test
   toggling in `forge.config.ts`.

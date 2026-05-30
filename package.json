@@ -1,8 +1,8 @@
 {
   "name": "machole",
-  "productName": "machole",
-  "version": "1.1.0",
-  "description": "Machole is a way to show your face and audio on screen recordings",
+  "productName": "ScreenHole",
+  "version": "1.2.0",
+  "description": "ScreenHole is a way to show your face and audio on screen recordings",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {

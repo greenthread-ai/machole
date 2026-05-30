@@ -8,7 +8,7 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 mkdir -p "$INSTALL_DIR"
 
-APP_PATH="$PWD/out/machole-darwin-arm64/machole.app"
+APP_PATH="$PWD/out/ScreenHole-darwin-arm64/ScreenHole.app"
 
 codesign --force --deep --sign - "$APP_PATH"
 

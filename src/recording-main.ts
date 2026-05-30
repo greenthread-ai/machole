@@ -476,7 +476,7 @@ function registerIpc(): void {
 
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: 'Save recording',
-        defaultPath: path.join(app.getPath('videos'), `Machole ${timestamp()}.${outExt}`),
+        defaultPath: path.join(app.getPath('videos'), `ScreenHole ${timestamp()}.${outExt}`),
         filters: [{ name: 'Video', extensions: [outExt] }],
       });
       if (canceled || !filePath) {

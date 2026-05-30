@@ -1,4 +1,4 @@
-# Machole
+# ScreenHole
 
 A persistent, always-on-top camera overlay **and** screen recorder for macOS —
 built for clean product demos.
@@ -11,7 +11,7 @@ built for clean product demos.
 
 ## Motivation
 
-Machole exists to make screen recordings look good. It was built so that
+ScreenHole exists to make screen recordings look good. It was built so that
 [GreenThread](https://greenthread.ai) can record polished demos of its
 **self-hosted AI models doing Real Work** — without juggling QuickTime, a
 separate webcam app, and a video editor.
@@ -44,7 +44,7 @@ You need:
 - **Node.js 20+** and **npm**
 
 Optionally install [ffmpeg](https://ffmpeg.org) — `brew install ffmpeg` — and
-Machole will automatically compress finished recordings to a smaller file.
+ScreenHole will automatically compress finished recordings to a smaller file.
 
 Clone the repo and install dependencies:
 
@@ -64,7 +64,7 @@ npm run make    # build distributable installers (.dmg / .zip)
 
 See [`docs/RELEASING.md`](docs/RELEASING.md) for signed, notarized release builds.
 
-## Running Machole
+## Running ScreenHole
 
 Run straight from source with live reload:
 
@@ -80,7 +80,7 @@ npm run install-binary
 machole
 ```
 
-On first launch Machole checks for **camera**, **microphone**, and
+On first launch ScreenHole checks for **camera**, **microphone**, and
 **screen-recording** permissions and walks you through granting any that are
 missing. Once running:
 
@@ -95,7 +95,7 @@ missing. Once running:
 Licensed under the [PolyForm Strict License 1.0.0](https://polyformproject.org/licenses/strict/1.0.0/).
 See [`LICENSE`](LICENSE).
 
-You are free to clone, build, and run Machole for your own use. You may **not**
-distribute Machole or its binaries — or any modified version — without prior
+You are free to clone, build, and run ScreenHole for your own use. You may **not**
+distribute ScreenHole or its binaries — or any modified version — without prior
 written permission. To request distribution rights, contact
 [accounts@greenthread.ai](mailto:accounts@greenthread.ai).
