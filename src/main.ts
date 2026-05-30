@@ -147,7 +147,7 @@ let cameraDevices: { id: string; label: string }[] = [];
 // the "camera on/off" control can hide/show the face during a recording.
 let cameraWindow: BrowserWindow | null = null;
 
-// Menu bar extra. Machole runs as an agent app (no Dock icon), so the Tray is
+// Menu bar extra. ScreenHole runs as an agent app (no Dock icon), so the Tray is
 // its required standard macOS presence (App Store Guideline 4).
 let tray: Tray | null = null;
 
@@ -333,7 +333,7 @@ const createWindow = () => {
     const contextMenu = Menu.buildFromTemplate([
       ...buildOverlayMenuItems(),
       { type: 'separator' },
-      { label: 'Quit Machole', click: () => app.quit() },
+      { label: 'Quit ScreenHole', click: () => app.quit() },
     ]);
     contextMenu.popup({ window: mainWindow });
   });
@@ -402,7 +402,7 @@ function rebuildTrayMenu(): void {
       { type: 'separator' },
       ...buildOverlayMenuItems(),
       { type: 'separator' },
-      { label: 'Quit Machole', click: () => app.quit() },
+      { label: 'Quit ScreenHole', click: () => app.quit() },
     ]),
   );
 }
@@ -416,7 +416,7 @@ function createTray(): void {
   // Template image: the OS recolours it for the light/dark menu bar.
   image.setTemplateImage(true);
   tray = new Tray(image);
-  tray.setToolTip('Machole');
+  tray.setToolTip('ScreenHole');
   rebuildTrayMenu();
   // Recording start/stop relabels the Record/Stop item.
   setRecordingStateListener(() => rebuildTrayMenu());

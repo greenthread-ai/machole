@@ -1,4 +1,4 @@
-// Generates build/icon.icns (and build/icon.png) from Machole's logo — the
+// Generates build/icon.icns (and build/icon.png) from ScreenHole's logo — the
 // conic gradient ring with a black "hole" in the middle. Zero dependencies:
 // renders the artwork pixel-by-pixel, encodes PNGs by hand, and assembles the
 // .icns with macOS `iconutil`. Re-run with `npm run icon` after design tweaks.
@@ -150,7 +150,7 @@ function render(size) {
 
 // macOS menu bar (status item) glyphs are "template images": only the alpha
 // channel matters — the OS recolours the shape for light/dark menu bars. We
-// render Machole's ring-with-a-hole as a solid black donut so it reads as the
+// render ScreenHole's ring-with-a-hole as a solid black donut so it reads as the
 // brand mark at 16pt.
 function renderTemplate(size) {
   const SS = 4;

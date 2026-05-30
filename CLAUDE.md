@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Machole is a macOS Electron app that creates a persistent, always-on-top circular camera overlay for screen recordings. It displays the user's camera feed in a small draggable window with an animated gradient outline and no native window chrome. The camera overlay is configured via a right-click context menu.
+ScreenHole is a macOS Electron app that creates a persistent, always-on-top circular camera overlay for screen recordings. It displays the user's camera feed in a small draggable window with an animated gradient outline and no native window chrome. The camera overlay is configured via a right-click context menu.
 
-Machole also records the screen itself: pick a screen, window, or custom area; a 3-2-1 countdown plays; and screen video, microphone, and system audio are captured together and saved to an `.mp4` (falling back to `.webm` when the OS can't encode mp4). An always-on-screen controls overlay exposes record/stop/pause/mute/camera actions and their global keyboard shortcuts; it is content-protected so it never appears in the recording.
+ScreenHole also records the screen itself: pick a screen, window, or custom area; a 3-2-1 countdown plays; and screen video, microphone, and system audio are captured together and saved to an `.mp4` (falling back to `.webm` when the OS can't encode mp4). An always-on-screen controls overlay exposes record/stop/pause/mute/camera actions and their global keyboard shortcuts; it is content-protected so it never appears in the recording.
 
 ## Commands
 

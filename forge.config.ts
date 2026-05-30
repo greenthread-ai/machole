@@ -9,7 +9,7 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
-// Machole has two macOS distribution paths, both driven by environment
+// ScreenHole has two macOS distribution paths, both driven by environment
 // variables so local `npm run dev` / `npm run build` stay unsigned:
 //
 //  1. Developer ID (.dmg, notarized) — set APPLE_SIGNING_IDENTITY. Used by
@@ -44,15 +44,15 @@ const config: ForgeConfig = {
     // macOS shows these strings in the camera/microphone permission prompts.
     extendInfo: {
       NSCameraUsageDescription:
-        'Machole displays your camera feed in the on-screen overlay.',
+        'ScreenHole displays your camera feed in the on-screen overlay.',
       NSMicrophoneUsageDescription:
-        'Machole records your microphone and drives the audio pulse animation.',
-      // Pre-answer App Store Connect's encryption questionnaire. Machole uses
+        'ScreenHole records your microphone and drives the audio pulse animation.',
+      // Pre-answer App Store Connect's encryption questionnaire. ScreenHole uses
       // only standard encryption included in macOS (HTTPS / TLS), which is
       // exempt under U.S. EAR Category 5, Part 2 §740.17(b)(1).
       ITSAppUsesNonExemptEncryption: false,
       // Run as a menu bar (agent) app: no Dock icon, lives in the menu bar
-      // extra. Machole's standard macOS presence is the Tray created in
+      // extra. ScreenHole's standard macOS presence is the Tray created in
       // main.ts — required for App Store Guideline 4.
       LSUIElement: true,
     },

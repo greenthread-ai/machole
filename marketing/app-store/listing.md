@@ -1,4 +1,4 @@
-# App Store Connect Listing — Machole
+# App Store Connect Listing — ScreenHole
 
 Everything to copy-paste into App Store Connect. Anything in `[TBD]` is something only you can decide / supply.
 
@@ -8,7 +8,7 @@ Everything to copy-paste into App Store Connect. Anything in `[TBD]` is somethin
 
 | Field | Value |
 |---|---|
-| Name | `Machole` |
+| Name | `ScreenHole` |
 | Bundle ID | `ai.greenthread.machole` |
 | SKU | `machole-001` |
 | Primary Language | English (U.S.) |
@@ -19,7 +19,7 @@ Everything to copy-paste into App Store Connect. Anything in `[TBD]` is somethin
 
 ### Age Rating questionnaire
 
-Answer "None" / "No" to every item. Machole contains no objectionable content, mature themes, gambling, ads, social features, in-app purchases, web browsing, or user-generated content. Final rating should be **4+**.
+Answer "None" / "No" to every item. ScreenHole contains no objectionable content, mature themes, gambling, ads, social features, in-app purchases, web browsing, or user-generated content. Final rating should be **4+**.
 
 ---
 
@@ -45,7 +45,7 @@ Answer "None" / "No" to every item. Machole contains no objectionable content, m
 
 Pick **"No, we do not collect data from this app"**.
 
-Machole runs entirely on the user's Mac. The camera, microphone, and screen capture streams are processed locally; recordings are written to a path the user chooses. There is no network call from the app at runtime. No accounts, no analytics, no telemetry, no crash reports.
+ScreenHole runs entirely on the user's Mac. The camera, microphone, and screen capture streams are processed locally; recordings are written to a path the user chooses. There is no network call from the app at runtime. No accounts, no analytics, no telemetry, no crash reports.
 
 ---
 
@@ -86,7 +86,7 @@ screen recorder,camera overlay,screencast,record,tutorial,demo,video,face cam,mi
 ### Description (max 4000 chars)
 
 ```
-Machole records your screen with your face baked in.
+ScreenHole records your screen with your face baked in.
 
 A small circular camera overlay floats on top of every other window, so when you record a tutorial, demo, or async update, your viewers see what you're doing AND who's doing it. No post-production, no awkward picture-in-picture, no fighting with OBS — just press record.
 
@@ -154,7 +154,7 @@ PERFECT FOR
 ### What's New in This Version (max 4000 chars)
 
 ```
-First public release of Machole.
+First public release of ScreenHole.
 
 • Record full screen, a single window, or a custom area
 • Mix microphone and system audio into your recording automatically
@@ -197,12 +197,12 @@ https://greenthread-ai.github.io/machole/
 
 ### Sign-In Required
 
-**No.** Machole does not require an account.
+**No.** ScreenHole does not require an account.
 
 ### Notes for Reviewer
 
 ```
-Machole is a local screen-recording app with an always-on camera overlay. It does not communicate with any servers — there are no accounts, sign-in, or network calls.
+ScreenHole is a local screen-recording app with an always-on camera overlay. It does not communicate with any servers — there are no accounts, sign-in, or network calls.
 
 To test the recording flow:
 

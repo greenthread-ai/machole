@@ -1,6 +1,6 @@
-# Releasing Machole to the Mac App Store
+# Releasing ScreenHole to the Mac App Store
 
-Machole has two macOS distribution paths:
+ScreenHole has two macOS distribution paths:
 
 - **Direct download** — a notarized `.dmg` signed with a *Developer ID*
   certificate. See [`RELEASING.md`](./RELEASING.md).
@@ -136,7 +136,7 @@ The pipeline is in place, but App Store distribution of a screen recorder has
 real constraints that need verification on a live submission:
 
 - **ffmpeg compression is disabled under the sandbox.** `src/ffmpeg.ts` execs a
-  *system* `ffmpeg`, which a sandboxed app cannot launch. Machole already falls
+  *system* `ffmpeg`, which a sandboxed app cannot launch. ScreenHole already falls
   back to saving the recording uncompressed when ffmpeg is unavailable, so
   recordings are never lost — but App Store builds get no compression. To
   restore it, an `ffmpeg` binary would need to be bundled inside the app and

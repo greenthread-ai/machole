@@ -1,5 +1,5 @@
 /* Shared styles for all screenshot mocks. Each page is a 1440x900 canvas
-   that resembles a macOS desktop with the real Machole UI composited on
+   that resembles a macOS desktop with the real ScreenHole UI composited on
    top — captured retina with ⌘⇧4 → Space it lands at 2880x1800. */
 
 * {

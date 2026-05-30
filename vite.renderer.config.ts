@@ -58,7 +58,7 @@ function mediapipeAssets(): Plugin {
 }
 
 // https://vitejs.dev/config
-// Machole's renderer is a multi-page app: the camera overlay plus the
+// ScreenHole's renderer is a multi-page app: the camera overlay plus the
 // recording windows (controls, source picker, countdown, area selector).
 // Each HTML file is its own entry; Vite keeps their paths so the main
 // process can `loadFile` them individually in production.

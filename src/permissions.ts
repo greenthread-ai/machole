@@ -61,7 +61,7 @@ function render(state: PermState): void {
     primaryBtn.dataset.action = 'continue';
     primaryBtn.disabled = false;
   } else if (allGranted && !state.screenGrantedAtBoot) {
-    primaryBtn.textContent = 'Restart Machole';
+    primaryBtn.textContent = 'Restart ScreenHole';
     primaryBtn.dataset.action = 'restart';
     primaryBtn.disabled = false;
   } else {
